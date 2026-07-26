@@ -1,0 +1,30 @@
+<div class="mx-auto mt-10 w-full max-w-md">
+  <h1 class="mb-6 text-2xl font-semibold text-slate-900">Editar tarefa</h1>
+
+  <%= render "shared/errors", record: @task %>
+
+  <%= form_with model: [ @list, @task ], url: list_task_path(@list, @task), method: :patch, class: "space-y-4" do |f| %>
+    <div>
+      <%= f.label :title, "Titulo", class: "block text-sm font-medium text-slate-700" %>
+      <%= f.text_field :title,
+            class: "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
+    </div>
+
+    <div>
+      <%= f.label :description, "Descricao", class: "block text-sm font-medium text-slate-700" %>
+      <%= f.text_area :description, rows: 3,
+            class: "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
+    </div>
+
+    <div>
+      <%= f.label :due_date, "Prazo", class: "block text-sm font-medium text-slate-700" %>
+      <%= f.date_field :due_date,
+            class: "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <%= f.submit "Salvar", class: "cursor-pointer rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700" %>
+      <%= link_to "Cancelar", list_path(@list), class: "text-sm text-slate-600 hover:underline" %>
+    </div>
+  <% end %>
+</div>

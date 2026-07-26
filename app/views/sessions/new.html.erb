@@ -1,0 +1,23 @@
+<div class="mx-auto mt-16 w-full max-w-sm">
+  <h1 class="mb-6 text-2xl font-semibold text-slate-900">Entrar</h1>
+
+  <%= form_with url: login_path, method: :post, class: "space-y-4" do |f| %>
+    <div>
+      <%= f.label :email, "Email", class: "block text-sm font-medium text-slate-700" %>
+      <%= f.email_field :email, autocomplete: "email",
+            class: "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
+    </div>
+
+    <div>
+      <%= f.label :password, "Senha", class: "block text-sm font-medium text-slate-700" %>
+      <%= f.password_field :password, autocomplete: "current-password",
+            class: "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
+    </div>
+
+    <%= f.submit "Entrar", class: "w-full cursor-pointer rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700" %>
+  <% end %>
+
+  <p class="mt-6 text-sm text-slate-600">
+    Ainda nao tem conta? <%= link_to "Criar conta", signup_path, class: "font-medium text-slate-900 underline" %>
+  </p>
+</div>

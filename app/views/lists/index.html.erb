@@ -1,0 +1,33 @@
+<div class="mx-auto mt-10 w-full max-w-2xl">
+  <h1 class="mb-6 text-2xl font-semibold text-slate-900">Minhas listas</h1>
+
+  <%= render "shared/errors", record: @list %>
+
+  <%= form_with model: @list, url: lists_path, method: :post, class: "mb-8 flex gap-2" do |f| %>
+    <%= f.label :name, "Nome da lista", class: "sr-only" %>
+    <%= f.text_field :name, placeholder: "Nome da lista",
+          class: "flex-1 rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
+    <%= f.submit "Criar lista", class: "cursor-pointer rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700" %>
+  <% end %>
+
+  <% if @lists.empty? %>
+    <p class="rounded-md border border-dashed border-slate-300 p-8 text-center text-slate-500">
+      Voce ainda nao tem listas. Crie a primeira acima.
+    </p>
+  <% else %>
+    <ul class="divide-y divide-slate-200 rounded-md border border-slate-200">
+      <% @lists.each do |list| %>
+        <li class="flex items-center justify-between gap-4 px-4 py-3">
+          <%= link_to list.name, list_path(list), class: "font-medium text-slate-900 hover:underline" %>
+
+          <span class="flex items-center gap-3 text-sm">
+            <span class="text-slate-500"><%= pluralize(list.tasks.size, "tarefa") %></span>
+            <%= link_to "Editar", edit_list_path(list), class: "text-slate-600 hover:underline" %>
+            <%= button_to "Excluir", list_path(list), method: :delete,
+                  class: "cursor-pointer text-red-700 hover:underline" %>
+          </span>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>

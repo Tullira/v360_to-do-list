@@ -1,0 +1,64 @@
+name: to_do_list
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB no .env}
+    ports:
+      # 5433 no host para nao colidir com um Postgres nativo na 5432.
+      - "${DB_HOST_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # O app so sobe depois que o banco aceita conexao de verdade.
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    environment:
+      RAILS_ENV: development
+      # Chave que assina os JWT. Explicita porque o .dockerignore mantem o
+      # config/master.key fora da imagem - sem isso o Rails geraria um
+      # segredo efemero em tmp/ e todo token emitido morreria a cada rebuild.
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?defina SECRET_KEY_BASE no .env}
+      # Variaveis discretas em vez de DATABASE_URL: o Rails mescla
+      # DATABASE_URL sobre a config do ambiente ATUAL, o que faria a suite
+      # de teste apontar para o banco de desenvolvimento e apaga-lo.
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME_DEVELOPMENT: ${POSTGRES_DB}
+      DB_NAME_TEST: ${POSTGRES_DB_TEST:-to_do_list_test}
+    ports:
+      - "${APP_HOST_PORT:-3000}:3000"
+    volumes:
+      # Codigo montado do host: editar em app/ reflete no container na hora.
+      - .:/rails
+      # Volumes nomeados sobrepondo o bind mount: tmp e log vivem no sistema
+      # de arquivos do container (rapido) em vez de no OneDrive.
+      # NAO monte um volume em /usr/local/bundle: ele sombrearia as gems da
+      # imagem e um rebuild depois de mexer no Gemfile nao teria efeito.
+      - tmp:/rails/tmp
+      - log:/rails/log
+    depends_on:
+      db:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+
+volumes:
+  pgdata:
+  tmp:
+  log:

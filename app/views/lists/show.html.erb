@@ -1,0 +1,51 @@
+<div class="mx-auto mt-10 w-full max-w-2xl">
+  <div class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-semibold text-slate-900"><%= @list.name %></h1>
+    <%= link_to "Voltar", lists_path, class: "text-sm text-slate-600 hover:underline" %>
+  </div>
+
+  <%= render "shared/errors", record: @task %>
+
+  <%= form_with model: [ @list, @task ], url: list_tasks_path(@list), method: :post, class: "mb-8 flex gap-2" do |f| %>
+    <%= f.label :title, "Nova tarefa", class: "sr-only" %>
+    <%= f.text_field :title, placeholder: "Nova tarefa",
+          class: "flex-1 rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
+    <%= f.submit "Adicionar", class: "cursor-pointer rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700" %>
+  <% end %>
+
+  <% if @tasks.empty? %>
+    <p class="rounded-md border border-dashed border-slate-300 p-8 text-center text-slate-500">
+      Nenhuma tarefa por aqui. Adicione a primeira acima.
+    </p>
+  <% else %>
+    <ul class="divide-y divide-slate-200 rounded-md border border-slate-200">
+      <% @tasks.each do |task| %>
+        <li class="flex items-center justify-between gap-4 px-4 py-3" data-completed="<%= task.completed %>">
+          <div class="flex items-center gap-3">
+            <%= form_with model: [ @list, task ], url: list_task_path(@list, task), method: :patch do |f| %>
+              <%= f.check_box :completed,
+                    id: "task_#{task.id}_completed",
+                    onchange: "this.form.requestSubmit()",
+                    class: "size-4 cursor-pointer rounded border-slate-300" %>
+              <%= f.label :completed, "Concluida", for: "task_#{task.id}_completed", class: "sr-only" %>
+            <% end %>
+
+            <span class="<%= task.completed? ? "text-slate-400 line-through" : "text-slate-900" %>">
+              <%= task.title %>
+            </span>
+
+            <% if task.due_date.present? %>
+              <span class="text-xs text-slate-500"><%= l task.due_date, format: :long %></span>
+            <% end %>
+          </div>
+
+          <span class="flex items-center gap-3 text-sm">
+            <%= link_to "Editar", edit_list_task_path(@list, task), class: "text-slate-600 hover:underline" %>
+            <%= button_to "Excluir tarefa", list_task_path(@list, task), method: :delete,
+                  class: "cursor-pointer text-red-700 hover:underline" %>
+          </span>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>

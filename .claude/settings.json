@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(sudo *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(rails db:drop*)",
+      "Bash(bin/rails db:drop*)",
+      "Bash(rails db:reset*)",
+      "Bash(bin/rails db:reset*)",
+      "Bash(rails db:environment:set*)",
+      "Bash(bin/rails db:environment:set*)",
+      "Bash(heroku pg:reset*)",
+      "Bash(heroku pg:push*)",
+
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(config/master.key)",
+      "Read(config/credentials.yml.enc)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Read(**/*.pem)",
+      "Edit(config/master.key)",
+      "Edit(config/credentials.yml.enc)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(rails db:migrate*)",
+      "Bash(bin/rails db:migrate*)",
+      "Bash(rails db:rollback*)",
+      "Bash(bin/rails db:rollback*)",
+      "Bash(rails db:schema:load*)",
+      "Bash(rm -rf *)",
+      "Bash(bundle update*)",
+      "Bash(bundle add *)",
+      "Bash(gem install *)"
+    ],
+    "allow": [
+      "Bash(bundle exec rspec*)",
+      "Bash(bundle exec rubocop*)",
+      "Bash(bin/rails routes*)",
+      "Bash(bin/rails generate*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ]
+  }
+}
