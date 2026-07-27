@@ -1,0 +1,71 @@
+name: Deploy
+
+# Nao dispara em push: o gatilho e a conclusao do workflow "CI" na master
+# (origin/HEAD -> origin/master). Assim nada e publicado sem passar pela CI.
+on:
+  workflow_run:
+    workflows: [ "CI" ]
+    types: [ completed ]
+    branches: [ master ]
+
+# Dois deploys seguidos nao podem disputar o mesmo servidor. O deploy em
+# andamento termina antes do proximo comecar (cancel-in-progress: false).
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  APP_NAME: to-do-list
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    # workflow_run dispara em qualquer conclusao, inclusive failure e
+    # cancelled - o filtro de verdade e aqui. O `event == 'push'` descarta as
+    # execucoes de CI vindas de pull_request.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          # Em workflow_run o checkout traz o HEAD da branch padrao por
+          # padrao, que pode ja ter avancado - publicaria um commit diferente
+          # do que a CI testou. Fixamos o SHA exato da execucao aprovada.
+          ref: ${{ github.event.workflow_run.head_sha }}
+          # O Dokku precisa do historico completo: o push e um push de git,
+          # nao um envio de tarball.
+          fetch-depth: 0
+
+      - name: Preparar chave SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DOKKU_SSH_PRIVATE_KEY }}
+          DOKKU_HOST: ${{ secrets.DOKKU_HOST }}
+          DOKKU_HOST_KEY: ${{ secrets.DOKKU_HOST_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          if [ -n "$DOKKU_HOST_KEY" ]; then
+            printf '%s\n' "$DOKKU_HOST_KEY" > ~/.ssh/known_hosts
+          else
+            # Sem a host key fixada em secret, confiamos na chave apresentada
+            # agora (TOFU). Preencha DOKKU_HOST_KEY com a saida de
+            # `ssh-keyscan <ip>` para fechar a janela de man-in-the-middle.
+            ssh-keyscan -H "$DOKKU_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Push para o Dokku
+        env:
+          DOKKU_HOST: ${{ secrets.DOKKU_HOST }}
+          GIT_SSH_COMMAND: ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes
+        # Push normal, sem --force: o Dokku so recebe historico que ja esta
+        # em master, e master nunca e reescrito. Se um dia o push for
+        # rejeitado por nao ser fast-forward, isso e sinal de historico
+        # reescrito - investigue em vez de forcar.
+        run: git push "dokku@${DOKKU_HOST}:${APP_NAME}" "HEAD:refs/heads/master"
