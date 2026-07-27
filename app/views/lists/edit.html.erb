@@ -1,18 +1,23 @@
 <div class="mx-auto mt-10 w-full max-w-md">
-  <h1 class="mb-6 text-2xl font-semibold text-slate-900">Renomear lista</h1>
+  <nav class="mb-4 text-sm">
+    <%= link_to "Minhas listas", lists_path, class: "text-slate-500 hover:text-slate-900" %>
+  </nav>
 
-  <%= render "shared/errors", record: @list %>
+  <div class="card p-6">
+    <h1 class="text-xl font-semibold tracking-tight text-slate-900">Renomear lista</h1>
 
-  <%= form_with model: @list, url: list_path(@list), method: :patch, class: "space-y-4" do |f| %>
-    <div>
-      <%= f.label :name, "Nome da lista", class: "block text-sm font-medium text-slate-700" %>
-      <%= f.text_field :name,
-            class: "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
-    </div>
+    <%= form_with model: @list, url: list_path(@list), method: :patch, class: "mt-6 space-y-4" do |f| %>
+      <%= render "shared/errors", record: @list %>
 
-    <div class="flex items-center gap-3">
-      <%= f.submit "Salvar", class: "cursor-pointer rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700" %>
-      <%= link_to "Cancelar", lists_path, class: "text-sm text-slate-600 hover:underline" %>
-    </div>
-  <% end %>
+      <div>
+        <%= f.label :name, "Nome da lista", class: "field-label" %>
+        <%= f.text_field :name, autofocus: true, class: "field" %>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <%= link_to "Cancelar", lists_path, class: "btn btn-secondary" %>
+        <%= f.submit "Salvar", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
 </div>

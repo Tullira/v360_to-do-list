@@ -1,0 +1,33 @@
+<%# Botao de criar + popup com o formulario. Renderize com `render layout:`
+    passando o formulario no bloco.
+
+    locals:
+      trigger  - texto do botao que abre o popup
+      title    - titulo dentro do popup
+      subtitle - linha de apoio (opcional)
+      open     - true reabre o popup ja aberto (usado quando a validacao falha)
+%>
+<div data-controller="dialog" data-dialog-open-value="<%= open %>">
+  <button type="button" class="btn btn-primary" data-action="dialog#open">
+    <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
+    </svg>
+    <%= trigger %>
+  </button>
+
+  <dialog data-dialog-target="panel"
+          data-action="click->dialog#closeOnBackdrop"
+          class="modal-panel">
+    <div class="p-6">
+      <h2 class="text-lg font-semibold tracking-tight text-slate-900"><%= title %></h2>
+
+      <% if local_assigns[:subtitle].present? %>
+        <p class="mt-1 text-sm text-slate-500"><%= subtitle %></p>
+      <% end %>
+
+      <div class="mt-5">
+        <%= yield %>
+      </div>
+    </div>
+  </dialog>
+</div>

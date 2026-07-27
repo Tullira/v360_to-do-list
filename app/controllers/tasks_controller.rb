@@ -3,7 +3,6 @@ class TasksController < ApplicationController
   before_action :set_task, only: %i[show edit update destroy]
 
   def show
-    redirect_to list_path(@list)
   end
 
   def edit
@@ -22,7 +21,7 @@ class TasksController < ApplicationController
 
   def update
     if @task.update(task_params)
-      redirect_to list_path(@list)
+      redirect_to after_update_path
     else
       render :edit, status: :unprocessable_content
     end
@@ -34,6 +33,13 @@ class TasksController < ApplicationController
   end
 
   private
+
+  # Marcar como concluida na tela da tarefa nao pode jogar o usuario de volta
+  # para a lista. O destino vem de um token fixo, nunca de uma URL enviada
+  # pelo cliente: aceitar uma URL aqui seria redirecionamento aberto.
+  def after_update_path
+    params[:return_to] == "task" ? list_task_path(@list, @task) : list_path(@list)
+  end
 
   # A posse de uma task e sempre verificada via list.user_id - aqui, pelo
   # escopo current_user.lists. Lista alheia vira 404, nao 403.

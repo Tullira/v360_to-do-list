@@ -225,6 +225,52 @@ Volta automaticamente com `config.api_only = false` e é a defesa principal agor
 que a autenticação anda em cookie. Um `POST` sem `authenticity_token` recebe
 422. Os helpers de formulário do Rails incluem o token sozinhos.
 
+### 5.5 Prefetch não encosta na sessão
+
+O Turbo dispara um `GET` do link assim que o mouse passa por cima dele, **em
+paralelo** com a navegação real. Essa requisição carrega o cookie de sessão como
+qualquer outra — e é aí que ela estraga as coisas:
+
+```mermaid
+sequenceDiagram
+    participant B as Navegador
+    participant S as Servidor
+    B->>S: GET /lists (sem sessão)
+    B->>S: GET /signup (prefetch, cookie antigo)
+    S-->>B: 302 /login + Set-Cookie {flash: "Faça login"}
+    S-->>B: 200 /signup + Set-Cookie {sessão antiga, sem flash}
+    Note over B: o cookie do prefetch chega depois<br/>e sobrescreve o flash
+    B->>S: GET /login
+    S-->>B: 200 sem a mensagem
+```
+
+Um prefetch **não é uma visita**: a resposta pode ser descartada sem nunca ser
+exibida. Logo ele não pode ter efeito colateral na sessão. O
+`ApplicationController` neutraliza os dois caminhos:
+
+```ruby
+def isolate_prefetch_from_session
+  return unless request.headers["X-Sec-Purpose"] == "prefetch"
+
+  flash.keep                              # não consome a mensagem
+  request.session_options[:skip] = true   # não responde com Set-Cookie
+end
+```
+
+Só o `flash.keep` **não basta** — ele resolve o prefetch que leu a mensagem, não
+o que chegou com um cookie anterior a ela. Cobertura em
+`spec/requests/flash_spec.rb`; no navegador o cenário é uma corrida, então o
+teste determinístico mora em request spec.
+
+**E ainda assim o prefetch está desligado** (`data-turbo-prefetch="false"` no
+`<body>`). Sobra um terceiro caminho que o servidor não alcança: o Turbo guarda
+a resposta buscada no *hover* e a reaproveita na navegação seguinte, então uma
+página capturada antes de o flash existir aparece sem ele — é cache do lado do
+cliente de um conteúdo que depende do instante. Com páginas de poucos
+milissegundos o prefetch não paga esse preço. O guard do servidor fica como
+defesa em profundidade, para o caso de alguém reativar o prefetch num link
+específico com `data-turbo-prefetch="true"`.
+
 ---
 
 ## 6. Rotas
@@ -249,6 +295,12 @@ O `before_action :require_login` mora no `ApplicationController` — a proteçã
 **opt-out**, não opt-in. Só `sessions#new/create` e `users#new/create` fazem
 `skip_before_action`. Um controller novo nasce protegido por padrão.
 
+`tasks#show` é uma tela de verdade (título, descrição, prazo, estado), aberta
+pelo título na listagem. Como a mesma ação `update` serve à caixa de "concluída"
+na lista e à da tela da tarefa, o destino depois de salvar vem de um parâmetro
+`return_to` que só aceita **o token fixo `"task"`** — nunca uma URL vinda do
+cliente, que seria redirecionamento aberto. Qualquer outro valor cai na lista.
+
 ---
 
 ## 7. Estrutura de diretórios
@@ -268,16 +320,43 @@ app/
     task.rb                      belongs_to :list, delegate :user
   views/
     layouts/application.html.erb nav, flash, importmap, Tailwind
-    sessions/ users/ lists/ tasks/
+    sessions/ users/
+    lists/    index (listas + popup), show (tarefas + popup), edit
+    tasks/    show (tela da tarefa), edit
+    shared/_modal   botão + <dialog> de criação
     shared/_errors  shared/not_found
-  javascript/                    Stimulus via importmap
-  assets/tailwind/application.css
+  javascript/controllers/
+    dialog_controller.js         abre/fecha o popup de criação
+  assets/tailwind/application.css  componentes (.btn, .field, .card, .badge)
 
 db/migrate/                      3 migrations (users, lists, tasks)
 spec/                            ver seção 8
 docs/ARQUITETURA.md              este arquivo
 compose.yaml  Dockerfile.dev     ver seção 9
 ```
+
+### 7.1 O padrão de criação: popup
+
+Criar lista e criar tarefa usam o mesmo componente, `shared/_modal`, renderizado
+com `render layout:` e o formulário no bloco. O motivo é de uso: um campo de
+texto solto no topo da página é lido como barra de pesquisa, não como "crie algo
+aqui". O botão declara a intenção; o popup dá espaço para pedir mais de um campo
+— no caso da tarefa, título, **descrição** e prazo.
+
+É o `<dialog>` nativo: já traz foco preso, `Esc` para fechar e camada própria
+acima do resto, sem `z-index` nem biblioteca. O `dialog_controller.js` só abre e
+fecha. Dois detalhes que não são óbvios:
+
+- **O popup reabre sozinho quando a validação falha.** O servidor re-renderiza a
+  página inteira com 422 e o Turbo troca o `body`; sem isso o popup voltaria
+  fechado, escondendo o erro e o que a pessoa digitou. O controller recebe
+  `data-dialog-open-value` e chama `showModal()` no `connect()`.
+- **O `m-auto` na `.modal-panel` é obrigatório.** O preflight do Tailwind zera a
+  margem de todos os elementos, inclusive o `margin: auto` que o navegador usa
+  para centralizar um `<dialog>` modal.
+
+Editar continua sendo página, não popup: é uma tarefa deliberada, com URL
+própria para poder ser compartilhada e recarregada.
 
 ---
 
@@ -289,22 +368,25 @@ de teste não é estilo — é o que o teste consegue provar.**
 ```mermaid
 flowchart TD
     M["spec/models/<br/>36 exemplos"] --> M1["validações, associações,<br/>defaults, normalização"]
-    S["spec/system/<br/>29 exemplos"] --> S1["fluxos de usuário<br/>em Chrome headless real"]
-    R["spec/requests/<br/>18 exemplos"] --> R1["cenários de segurança que<br/>um navegador não produz"]
+    S["spec/system/<br/>39 exemplos"] --> S1["fluxos de usuário<br/>em Chrome headless real"]
+    R["spec/requests/<br/>21 exemplos"] --> R1["cenários que um navegador<br/>não produz de forma confiável"]
 ```
 
 | Camada | Arquivo | Cobre |
 |---|---|---|
 | Model | `spec/models/*_spec.rb` | Validações, associações, `has_secure_password`, defaults de `role` e `completed`, unicidade case-insensitive, ausência de `user_id` em `tasks` |
-| Sistema | `spec/system/*_spec.rb` | Cadastro, login, logout, CRUD de listas e tarefas, estados vazios, persistência após reload, redirecionamento de visitante |
+| Sistema | `spec/system/*_spec.rb` | Cadastro, login, logout, CRUD de listas e tarefas, popup de criação, tela da tarefa, estados vazios, persistência após reload, redirecionamento de visitante |
 | Request | `spec/requests/authorization_spec.rb` | Forjar `user_id`/`list_id`/`role` no corpo, indistinguibilidade 404, paridade de mensagem e de tempo no login, CSRF ativa |
+| Request | `spec/requests/flash_spec.rb` | Prefetch não consome nem sobrescreve a sessão (seção 5.5) |
 
 > **Por que os testes de segurança não são de sistema:** um formulário não tem
 > campo `list_id`. Converter esses cenários para Capybara faria o teste passar
 > sem provar nada — não dá para forjar, pelo navegador, um parâmetro que a
-> página não expõe. Request spec é a ferramenta certa aqui.
+> página não expõe. Request spec é a ferramenta certa aqui. Mesmo raciocínio
+> para o prefetch: no navegador ele é uma corrida entre duas requisições, e um
+> teste que só passa às vezes não prova coisa alguma.
 
-Cobertura via SimpleCov em `coverage/index.html`. Hoje: **94.69%**, 83 exemplos.
+Cobertura via SimpleCov em `coverage/index.html`. Hoje: **95.65%**, 96 exemplos.
 
 ---
 
@@ -358,6 +440,9 @@ definida, a suíte de teste apontaria para o banco de desenvolvimento — e o
 | 6 | Segurança em request spec | Tudo em system spec | Navegador não forja parâmetro inexistente |
 | 7 | Postgres em container | Instalação nativa | Senha definida por nós, ambiente reprodutível |
 | 8 | `role` no schema, sem lógica | Implementar RBAC agora | Campo pronto para o futuro, sem código não pedido |
+| 9 | Criar por popup | Campo solto no topo da página | Campo solto é lido como barra de pesquisa; popup cabe título + descrição + prazo |
+| 10 | Prefetch do Turbo desligado | Manter ligado com o guard de sessão | Resposta capturada no hover é reusada depois e engole o flash; ganho imperceptível em páginas de ms |
+| 11 | `return_to` como token fixo | Passar a URL de destino | URL vinda do cliente é redirecionamento aberto |
 
 ---
 

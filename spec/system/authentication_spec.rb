@@ -9,10 +9,15 @@ RSpec.describe "Autenticacao", type: :system do
       fill_in "Email", with: "ana@example.com"
       fill_in "Senha", with: "senha_super_secreta"
 
-      expect { click_button "Criar conta" }.to change(User, :count).by(1)
+      click_button "Criar conta"
 
+      # Sincronize com a resposta antes de olhar o banco. O Turbo envia o
+      # formulario por fetch, entao nao ha navegacao para o Capybara esperar:
+      # click_button volta na hora e `change(User, :count)` - que nao tem
+      # retry - leria o contador antes de o POST terminar.
       expect(page).to have_content("Minhas listas")
       expect(page).to have_button("Sair")
+      expect(User.count).to eq(1)
     end
 
     it "mostra erro quando o email ja esta cadastrado" do

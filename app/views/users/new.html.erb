@@ -1,32 +1,33 @@
 <div class="mx-auto mt-16 w-full max-w-sm">
-  <h1 class="mb-6 text-2xl font-semibold text-slate-900">Criar conta</h1>
+  <div class="card p-6">
+    <h1 class="text-xl font-semibold tracking-tight text-slate-900">Criar conta</h1>
+    <p class="mt-1 text-sm text-slate-500">Leva menos de um minuto.</p>
 
-  <%= render "shared/errors", record: @user %>
+    <%= form_with model: @user, url: signup_path, method: :post, class: "mt-6 space-y-4" do |f| %>
+      <%= render "shared/errors", record: @user %>
 
-  <%= form_with model: @user, url: signup_path, method: :post, class: "space-y-4" do |f| %>
-    <div>
-      <%= f.label :username, "Usuario", class: "block text-sm font-medium text-slate-700" %>
-      <%= f.text_field :username, autocomplete: "username",
-            class: "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
-    </div>
+      <div>
+        <%= f.label :username, "Usuario", class: "field-label" %>
+        <%= f.text_field :username, autocomplete: "username", autofocus: true, class: "field" %>
+      </div>
 
-    <div>
-      <%= f.label :email, "Email", class: "block text-sm font-medium text-slate-700" %>
-      <%= f.email_field :email, autocomplete: "email",
-            class: "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
-    </div>
+      <div>
+        <%= f.label :email, "Email", class: "field-label" %>
+        <%= f.email_field :email, autocomplete: "email", class: "field" %>
+      </div>
 
-    <div>
-      <%= f.label :password, "Senha", class: "block text-sm font-medium text-slate-700" %>
-      <%= f.password_field :password, autocomplete: "new-password",
-            class: "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
-      <p class="mt-1 text-xs text-slate-500">Minimo de 8 caracteres.</p>
-    </div>
+      <div>
+        <%= f.label :password, "Senha", class: "field-label" %>
+        <%= f.password_field :password, autocomplete: "new-password", class: "field" %>
+        <p class="field-hint">Minimo de 8 caracteres.</p>
+      </div>
 
-    <%= f.submit "Criar conta", class: "w-full cursor-pointer rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700" %>
-  <% end %>
+      <%= f.submit "Criar conta", class: "btn btn-primary w-full" %>
+    <% end %>
+  </div>
 
-  <p class="mt-6 text-sm text-slate-600">
-    Ja tem conta? <%= link_to "Entrar", login_path, class: "font-medium text-slate-900 underline" %>
+  <p class="mt-6 text-center text-sm text-slate-600">
+    Ja tem conta?
+    <%= link_to "Entrar", login_path, class: "font-medium text-indigo-600 hover:text-indigo-500" %>
   </p>
 </div>
