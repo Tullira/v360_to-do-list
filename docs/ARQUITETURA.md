@@ -453,7 +453,13 @@ cp .env.example .env      # ajuste POSTGRES_PASSWORD e SECRET_KEY_BASE
 docker compose build app
 docker compose up -d
 docker compose run --rm app bin/rails db:prepare
+docker compose run --rm app bin/rails tailwindcss:build
 ```
+
+O `tailwindcss:build` não é opcional num clone novo: `app/assets/builds/` é
+gitignored, então sem ele a aplicação sobe sem estilo nenhum. Repita o comando
+sempre que mexer no CSS ou usar uma classe nova numa view — o container roda só
+o servidor, não há watcher.
 
 Aplicação em http://localhost:3000.
 
