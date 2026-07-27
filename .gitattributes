@@ -1,0 +1,6 @@
+# Arquivos que rodam em Linux precisam de LF mesmo com core.autocrlf=true no
+# Windows. Com CRLF o shell falha com `$'\r': command not found` - a mesma
+# armadilha que ja mordeu os binstubs de bin/.
+*.sh        text eol=lf
+bin/*       text eol=lf
+Dockerfile* text eol=lf
