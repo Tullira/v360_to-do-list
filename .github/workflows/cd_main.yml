@@ -55,15 +55,29 @@ jobs:
           else
             # Sem a host key fixada em secret, confiamos na chave apresentada
             # agora (TOFU). Preencha DOKKU_HOST_KEY com a saida de
-            # `ssh-keyscan <ip>` para fechar a janela de man-in-the-middle.
-            ssh-keyscan -H "$DOKKU_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+            # `ssh-keyscan <host>` para fechar a janela de man-in-the-middle.
+            # Sem `-H` e sem descartar o stderr: entrada legivel no log e erro
+            # visivel se o keyscan nao trouxer nada.
+            ssh-keyscan "$DOKKU_HOST" > ~/.ssh/known_hosts
           fi
           chmod 600 ~/.ssh/known_hosts
+
+          # O ssh ignora em silencio uma linha malformada (ex.: o conteudo de
+          # um .pub, que nao tem o host no inicio) ou capturada para outro
+          # nome - e o erro so aparece no push, como "Host key verification
+          # failed". Falhamos aqui, dizendo o que corrigir.
+          if ! ssh-keygen -F "$DOKKU_HOST" -f ~/.ssh/known_hosts >/dev/null; then
+            echo "::error::known_hosts nao tem entrada para '$DOKKU_HOST'. Preencha o secret DOKKU_HOST_KEY com a saida de 'ssh-keyscan $DOKKU_HOST' (linha completa, comecando pelo host)."
+            exit 1
+          fi
 
       - name: Push para o Dokku
         env:
           DOKKU_HOST: ${{ secrets.DOKKU_HOST }}
-          GIT_SSH_COMMAND: ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes
+          # StrictHostKeyChecking explicito: e o padrao efetivo numa sessao
+          # nao interativa, mas deixar implicito esconde que a verificacao
+          # depende inteiramente do known_hosts montado no passo anterior.
+          GIT_SSH_COMMAND: ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
         # Push normal, sem --force: o Dokku so recebe historico que ja esta
         # em master, e master nunca e reescrito. Se um dia o push for
         # rejeitado por nao ser fast-forward, isso e sinal de historico
