@@ -22,22 +22,51 @@ RSpec.describe "Listas", type: :system do
     expect(page).to have_content("Voce ainda nao tem listas")
   end
 
-  it "cria uma lista" do
+  it "so mostra o campo de nome depois de abrir o popup" do
     visit lists_path
 
-    fill_in "Nome da lista", with: "Mercado"
-    expect { click_button "Criar lista" }.to change(owner.lists, :count).by(1)
+    # Um campo solto na pagina parece barra de pesquisa. O formulario de
+    # criacao so existe dentro do popup, aberto de proposito pelo usuario.
+    expect(page).not_to have_field("Nome da lista")
 
-    expect(page).to have_content("Mercado")
+    click_button "Nova lista"
+
+    expect(page).to have_field("Nome da lista")
   end
 
-  it "recusa lista sem nome" do
+  it "cria uma lista pelo popup" do
     visit lists_path
 
+    click_button "Nova lista"
+    fill_in "Nome da lista", with: "Mercado"
+    click_button "Criar lista"
+
+    # A asserção de tela vem antes da do banco de propósito: ela é a que
+    # espera. Ver o comentário em spec/system/authentication_spec.rb.
+    expect(page).to have_content("Mercado")
+    expect(owner.lists.count).to eq(1)
+  end
+
+  it "reabre o popup com o erro quando o nome vem vazio" do
+    visit lists_path
+
+    click_button "Nova lista"
     fill_in "Nome da lista", with: ""
-    expect { click_button "Criar lista" }.not_to change(List, :count)
+    click_button "Criar lista"
 
     expect(page).to have_content("Name can't be blank")
+    # O popup nao pode fechar levando junto o que a pessoa digitou.
+    expect(page).to have_field("Nome da lista")
+    expect(List.count).to eq(0)
+  end
+
+  it "fecha o popup ao cancelar" do
+    visit lists_path
+
+    click_button "Nova lista"
+    click_button "Cancelar"
+
+    expect(page).not_to have_field("Nome da lista")
   end
 
   it "renomeia uma lista" do
@@ -55,9 +84,10 @@ RSpec.describe "Listas", type: :system do
     create(:list, user: owner, name: "Mercado")
 
     visit lists_path
-    expect { click_button "Excluir" }.to change(List, :count).by(-1)
+    click_button "Excluir"
 
     expect(page).not_to have_content("Mercado")
+    expect(List.count).to eq(0)
   end
 
   it "nao abre a lista de outro usuario" do

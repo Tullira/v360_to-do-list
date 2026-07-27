@@ -2,7 +2,9 @@ class ListsController < ApplicationController
   before_action :set_list, only: %i[show edit update destroy]
 
   def index
-    @lists = current_user.lists.order(created_at: :desc)
+    # includes: a listagem mostra o total e o quanto ja foi concluido de cada
+    # lista, entao carregar as tasks junto evita uma consulta por linha.
+    @lists = current_user.lists.includes(:tasks).order(created_at: :desc)
     @list = List.new
   end
 
@@ -20,7 +22,7 @@ class ListsController < ApplicationController
     if @list.save
       redirect_to lists_path
     else
-      @lists = current_user.lists.order(created_at: :desc)
+      @lists = current_user.lists.includes(:tasks).order(created_at: :desc)
       render :index, status: :unprocessable_content
     end
   end

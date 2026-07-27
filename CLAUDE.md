@@ -64,6 +64,26 @@ para acompanhar ao vivo, redirecione para um arquivo no bind mount
   corpo da requisição, e a indistinguibilidade entre recurso alheio e
   inexistente. Não tente converter isto em spec de sistema: um formulário não
   tem os campos forjados, então o teste passaria sem provar nada.
+- `spec/requests/flash_spec.rb` — o prefetch do Turbo não pode consumir nem
+  sobrescrever a sessão. No navegador isso é uma corrida entre duas
+  requisições; em request spec a sequência é determinística.
+
+**Em spec de sistema, nunca use `expect { click_button ... }.to change(Model,
+:count)`.** O Turbo envia o formulário por `fetch`, então não existe navegação
+para o Capybara esperar: o clique retorna na hora e o matcher `change` — que
+não tem retry — lê o contador antes de o POST terminar. O teste passa ou falha
+conforme a carga da máquina. Sincronize primeiro numa asserção de tela
+(`expect(page).to have_content(...)`, que espera até `Capybara.default_max_wait_time`)
+e só depois consulte o banco:
+
+```ruby
+click_button "Criar lista"
+
+expect(page).to have_content("Mercado")   # esta é a que espera
+expect(owner.lists.count).to eq(1)
+```
+
+A mesma regra vale para `task.reload` logo após um `click_button`.
 
 ## Regras de segurança (não negociáveis)
 - Nunca rodar migrations destrutivas (`db:drop`, `db:reset`, rollback em
@@ -101,8 +121,33 @@ mudança de comportamento:
   vítima continuaria dono da sessão depois do login (*session fixation*).
 - **CSRF está ligada** (volta automaticamente com `api_only = false`). É a
   defesa principal agora que a autenticação anda em cookie.
+- **Prefetch do Turbo não encosta na sessão.** Ver
+  `ApplicationController#isolate_prefetch_from_session`. Um prefetch não é uma
+  visita — a resposta pode ser descartada —, então ele não consome o flash
+  (`flash.keep`) nem responde com `Set-Cookie`
+  (`request.session_options[:skip]`). Só o `flash.keep` não resolve: o prefetch
+  que partiu antes da mensagem existir sobrescreveria o cookie mais novo.
+  O prefetch em si está **desligado** no `<body>`
+  (`data-turbo-prefetch="false"`), porque sobra um caminho que o servidor não
+  alcança: o Turbo reusa a resposta capturada no hover, e uma página buscada
+  antes de o flash existir aparece sem ele. O guard fica como defesa em
+  profundidade. Não reative sem reler a seção 5.5 de `docs/ARQUITETURA.md`.
 - **`role` nunca vem do cliente.** Está fora dos Strong Parameters. Nenhuma
   autorização depende dele ainda — o campo existe apenas para uso futuro.
+
+## Convenções de front-end
+- Criar lista/tarefa é sempre por **popup** (`shared/_modal` + `<dialog>`
+  nativo, `dialog_controller.js`). Campo de texto solto no topo da página é
+  lido como barra de pesquisa — não volte a esse padrão. Editar continua sendo
+  página, com URL própria.
+- O popup **reabre sozinho** quando a validação falha: passe
+  `open: @registro.errors.any?` para o partial.
+- Botões e campos usam as classes de `app/assets/tailwind/application.css`
+  (`.btn .btn-primary`, `.field`, `.card`, `.badge`) em vez de repetir a sopa
+  de utilitários em cada view.
+- Depois de mexer no CSS ou em classe nova numa view:
+  `docker compose run --rm app bin/rails tailwindcss:build`. O container roda
+  só o servidor, não há watcher.
 
 ## Convenções de código
 - Siga o Rubocop configurado em `.rubocop.yml` (rails-omakase).
@@ -123,6 +168,8 @@ Já resolvidas — não reintroduza:
 - **Não monte volume nomeado em `/usr/local/bundle`.** Ele sombreia as gems da
   imagem, e um `docker compose build` depois de mexer no `Gemfile` não teria
   efeito nenhum.
+- **`.modal-panel` precisa de `m-auto`.** O preflight do Tailwind zera a margem
+  de tudo, inclusive o `margin: auto` que centraliza um `<dialog>` modal.
 - **As opções do Cuprite vão no `driven_by(options:)`, não em
   `Capybara.register_driver`.** No Rails 8.1 o `:cuprite` está na lista
   `registerable?` do `ActionDispatch::SystemTesting::Driver`, então o

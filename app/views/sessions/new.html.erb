@@ -1,23 +1,25 @@
 <div class="mx-auto mt-16 w-full max-w-sm">
-  <h1 class="mb-6 text-2xl font-semibold text-slate-900">Entrar</h1>
+  <div class="card p-6">
+    <h1 class="text-xl font-semibold tracking-tight text-slate-900">Entrar</h1>
+    <p class="mt-1 text-sm text-slate-500">Acesse suas listas.</p>
 
-  <%= form_with url: login_path, method: :post, class: "space-y-4" do |f| %>
-    <div>
-      <%= f.label :email, "Email", class: "block text-sm font-medium text-slate-700" %>
-      <%= f.email_field :email, autocomplete: "email",
-            class: "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
-    </div>
+    <%= form_with url: login_path, method: :post, class: "mt-6 space-y-4" do |f| %>
+      <div>
+        <%= f.label :email, "Email", class: "field-label" %>
+        <%= f.email_field :email, autocomplete: "email", autofocus: true, class: "field" %>
+      </div>
 
-    <div>
-      <%= f.label :password, "Senha", class: "block text-sm font-medium text-slate-700" %>
-      <%= f.password_field :password, autocomplete: "current-password",
-            class: "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500" %>
-    </div>
+      <div>
+        <%= f.label :password, "Senha", class: "field-label" %>
+        <%= f.password_field :password, autocomplete: "current-password", class: "field" %>
+      </div>
 
-    <%= f.submit "Entrar", class: "w-full cursor-pointer rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700" %>
-  <% end %>
+      <%= f.submit "Entrar", class: "btn btn-primary w-full" %>
+    <% end %>
+  </div>
 
-  <p class="mt-6 text-sm text-slate-600">
-    Ainda nao tem conta? <%= link_to "Criar conta", signup_path, class: "font-medium text-slate-900 underline" %>
+  <p class="mt-6 text-center text-sm text-slate-600">
+    Ainda nao tem conta?
+    <%= link_to "Criar conta", signup_path, class: "font-medium text-indigo-600 hover:text-indigo-500" %>
   </p>
 </div>
