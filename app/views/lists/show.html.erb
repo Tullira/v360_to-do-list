@@ -1,26 +1,16 @@
 <% pendentes = @tasks.count { |t| !t.completed? } %>
 
-<div class="mx-auto mt-10 w-full max-w-2xl">
+<div class="page">
   <nav class="mb-4 text-sm">
-    <%= link_to lists_path, class: "inline-flex items-center gap-1 text-slate-500 hover:text-slate-900" do %>
+    <%= link_to lists_path, class: "inline-flex items-center gap-1 text-fg-muted transition-colors hover:text-fg" do %>
       <%= render "shared/icon", name: "chevron-left", class: "size-4" %>
       Minhas listas
     <% end %>
   </nav>
 
-  <div class="mb-6 flex items-end justify-between gap-4">
-    <div class="min-w-0">
-      <h1 class="truncate text-2xl font-semibold tracking-tight text-slate-900"><%= @list.name %></h1>
-      <p class="mt-1 text-sm text-slate-500">
-        <% if @tasks.empty? %>
-          Nenhuma tarefa
-        <% else %>
-          <%= pluralize(pendentes, "tarefa pendente", plural: "tarefas pendentes") %>
-          de <%= @tasks.size %>
-        <% end %>
-      </p>
-    </div>
-
+  <%= render layout: "shared/page_header",
+             locals: { title: @list.name,
+                       subtitle: @tasks.empty? ? "Nenhuma tarefa" : "#{pluralize(pendentes, "tarefa pendente", plural: "tarefas pendentes")} de #{@tasks.size}" } do %>
     <%= render layout: "shared/modal",
                locals: { trigger: "Nova tarefa",
                          title: "Nova tarefa",
@@ -52,19 +42,19 @@
         </div>
       <% end %>
     <% end %>
-  </div>
+  <% end %>
 
   <% if @tasks.empty? %>
-    <div class="card p-10 text-center">
-      <%= render "shared/icon", name: "check", class: "mx-auto size-10 text-slate-300" %>
-      <h2 class="mt-4 font-medium text-slate-900">Nenhuma tarefa por aqui</h2>
-      <p class="mt-1 text-sm text-slate-500">Clique em "Nova tarefa" para adicionar a primeira.</p>
-    </div>
+    <%= render "shared/empty_state",
+               icon: "check",
+               title: "Nenhuma tarefa por aqui",
+               hint: 'Clique em "Nova tarefa" para adicionar a primeira.' %>
   <% else %>
-    <ul class="card divide-y divide-slate-100">
+    <ul class="card row-divide">
       <% @tasks.each do |task| %>
-        <li class="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50"
-            data-completed="<%= task.completed %>">
+        <li class="row" data-completed="<%= task.completed %>">
+          <%# Sem botao de submit: o onchange envia o formulario. A label fica
+              sr-only, nunca hidden - `check "Concluida"` precisa encontra-la. %>
           <%= form_with model: [ @list, task ], url: list_task_path(@list, task), method: :patch, class: "pt-0.5" do |f| %>
             <%= f.check_box :completed,
                   id: "task_#{task.id}_completed",
@@ -75,19 +65,18 @@
 
           <div class="min-w-0 flex-1">
             <%= link_to task.title, list_task_path(@list, task),
-                  class: class_names("block truncate font-medium hover:text-indigo-600",
-                                     "text-slate-400 line-through" => task.completed?,
-                                     "text-slate-900" => !task.completed?) %>
+                  class: class_names("block truncate font-medium transition-colors hover:text-accent-text",
+                                     "text-fg-subtle line-through" => task.completed?,
+                                     "text-fg" => !task.completed?) %>
 
             <% if task.description.present? %>
-              <p class="mt-0.5 truncate text-sm text-slate-500"><%= task.description %></p>
+              <p class="mt-0.5 truncate text-sm text-fg-muted"><%= task.description %></p>
             <% end %>
 
             <% if task.due_date.present? %>
-              <p class="mt-1 inline-flex items-center gap-1 text-xs text-slate-500">
-                <%= render "shared/icon", name: "calendar", class: "size-3.5" %>
-                <%= l task.due_date, format: :long %>
-              </p>
+              <div class="mt-1.5">
+                <%= render "shared/task_due_date", date: task.due_date, completed: task.completed? %>
+              </div>
             <% end %>
           </div>
 
