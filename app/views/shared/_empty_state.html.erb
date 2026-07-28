@@ -1,0 +1,15 @@
+<%# Estado vazio. lists/index e lists/show tinham este bloco duplicado.
+
+    A copy exata continua vindo de quem chama: a suite afirma
+    "Voce ainda nao tem listas" e "Nenhuma tarefa por aqui" literalmente.
+
+    Locais: icon, title, hint.
+%>
+<div class="card px-6 py-14 text-center">
+  <span class="mx-auto flex size-12 items-center justify-center rounded-full bg-surface-sunken text-fg-subtle">
+    <%= render "shared/icon", name: icon, class: "size-6" %>
+  </span>
+
+  <h2 class="mt-4 font-medium text-fg"><%= title %></h2>
+  <p class="mt-1 text-sm text-fg-muted"><%= hint %></p>
+</div>

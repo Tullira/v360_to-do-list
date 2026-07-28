@@ -1,0 +1,17 @@
+<%# Cabecalho de pagina: titulo, contagem e a acao primaria a direita.
+
+    Usado com `render layout:` - a acao vai no bloco, porque em lists/index e
+    lists/show ela e um modal inteiro, nao so um botao.
+
+    Locais: title, subtitle.
+%>
+<div class="mb-6 flex items-end justify-between gap-4">
+  <div class="min-w-0">
+    <h1 class="page-title"><%= title %></h1>
+    <p class="page-subtitle"><%= subtitle %></p>
+  </div>
+
+  <div class="shrink-0">
+    <%= yield %>
+  </div>
+</div>
