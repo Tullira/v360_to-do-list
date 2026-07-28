@@ -172,7 +172,15 @@ if dokku ps:report "$APP_NAME" --deployed 2>/dev/null | grep -qw true; then
   # Renovacao automatica: o cron cuida disso, nao precisa de auto-renew manual.
   dokku letsencrypt:cron-job --add
 else
+  # A aplicacao roda com config.assume_ssl = true, que faz o Rails tratar toda
+  # requisicao como HTTPS independentemente da conexao real: o redirect do
+  # force_ssl nao dispara e os cookies saem marcados Secure. Enquanto o
+  # certificado nao existe, isso significa HSTS anunciado em conexao em claro e
+  # cookie de sessao trafegando sem criptografia. A correcao aqui e
+  # operacional, nao de codigo - por isso o aviso.
   log "SSL pulado: $APP_NAME ainda nao tem deploy."
+  echo "    !!! ATE O CERTIFICADO SER EMITIDO A APP RESPONDE EM HTTP PURO."
+  echo "    !!! NAO divulgue o dominio nem crie contas reais antes disso."
   echo "    Faca o primeiro deploy (push em master) e rode este script de novo."
 fi
 

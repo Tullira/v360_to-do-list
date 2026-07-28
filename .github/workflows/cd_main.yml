@@ -14,6 +14,12 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
+# O deploy autentica por chave SSH, nao pelo GITHUB_TOKEN: nada aqui precisa
+# escrever no repositorio. Sem este bloco o token recebe o padrao do
+# repositorio, que pode ser read/write em tudo.
+permissions:
+  contents: read
+
 env:
   APP_NAME: to-do-list
 
@@ -31,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6
         with:
           # Em workflow_run o checkout traz o HEAD da branch padrao por
           # padrao, que pode ja ter avancado - publicaria um commit diferente
@@ -50,16 +56,16 @@ jobs:
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
-          if [ -n "$DOKKU_HOST_KEY" ]; then
-            printf '%s\n' "$DOKKU_HOST_KEY" > ~/.ssh/known_hosts
-          else
-            # Sem a host key fixada em secret, confiamos na chave apresentada
-            # agora (TOFU). Preencha DOKKU_HOST_KEY com a saida de
-            # `ssh-keyscan <host>` para fechar a janela de man-in-the-middle.
-            # Sem `-H` e sem descartar o stderr: entrada legivel no log e erro
-            # visivel se o keyscan nao trouxer nada.
-            ssh-keyscan "$DOKKU_HOST" > ~/.ssh/known_hosts
+          # Sem fallback para ssh-keyscan. Confiar na chave apresentada no
+          # momento e trust-on-first-use a CADA execucao, nao so na primeira:
+          # quem estiver posicionado na rede do runner se passa pelo servidor
+          # Dokku e recebe o push, que leva o codigo-fonte inteiro - e o
+          # known_hosts gerado no proprio job validaria a chave falsa.
+          if [ -z "$DOKKU_HOST_KEY" ]; then
+            echo "::error::Preencha o secret DOKKU_HOST_KEY com a saida de 'ssh-keyscan $DOKKU_HOST' rodada de uma maquina confiavel. E configuracao unica."
+            exit 1
           fi
+          printf '%s\n' "$DOKKU_HOST_KEY" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
           # O ssh ignora em silencio uma linha malformada (ex.: o conteudo de
