@@ -28,6 +28,6 @@ class UsersController < ApplicationController
   # role fora da lista permitida: senao o proprio cliente escolheria o papel
   # dele no cadastro.
   def user_params
-    params.require(:user).permit(:username, :email, :password)
+    params.require(:user).permit(:username, :email, :password, :password_confirmation)
   end
 end

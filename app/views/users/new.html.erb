@@ -23,6 +23,13 @@
       <p class="field-hint">Minimo de 8 caracteres.</p>
     </div>
 
+    <%# Nao existe recuperacao de senha em lugar nenhum do projeto: sem esta
+        confirmacao, um erro de digitacao aqui tranca a conta para sempre. %>
+    <div>
+      <%= f.label :password_confirmation, "Confirme a senha", class: "field-label" %>
+      <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "field" %>
+    </div>
+
     <%= f.submit "Criar conta", class: "btn btn-primary mt-2 w-full" %>
   <% end %>
 <% end %>
