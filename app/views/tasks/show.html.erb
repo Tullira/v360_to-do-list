@@ -47,13 +47,13 @@
 
     <div class="divider mt-6 flex flex-wrap items-center justify-between gap-4 pt-6">
       <%= form_with model: [ @list, @task ], url: list_task_path(@list, @task), method: :patch,
-                    class: "flex items-center gap-2" do |f| %>
+                    class: "flex items-center gap-2",
+                    data: { controller: "autosubmit", action: "change->autosubmit#submit" } do |f| %>
         <%# return_to e um token fixo, nunca uma URL do cliente: aceitar uma URL
             aqui abriria redirecionamento aberto. Ver TasksController. %>
         <%= hidden_field_tag :return_to, "task" %>
         <%= f.check_box :completed,
               id: "task_completed",
-              onchange: "this.form.requestSubmit()",
               class: "checkbox" %>
         <%= f.label :completed, "Concluida", for: "task_completed",
               class: "cursor-pointer text-sm text-fg" %>
