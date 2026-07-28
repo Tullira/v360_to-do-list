@@ -45,6 +45,8 @@ RSpec.configure do |config|
   config.include AuthHelpers, type: :request
   config.include AuthHelpers, type: :system
   config.include Rails.application.routes.url_helpers
+  # travel/travel_to: usados pelos specs de expiracao de sessao.
+  config.include ActiveSupport::Testing::TimeHelpers
 
   # As opcoes vao aqui, e nao num Capybara.register_driver, porque o
   # driven_by re-registra o driver :cuprite do zero (ver spec/support/capybara.rb).

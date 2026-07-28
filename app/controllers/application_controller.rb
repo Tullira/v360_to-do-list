@@ -41,6 +41,13 @@ class ApplicationController < ActionController::Base
   helper_method :signed_in?
 
   def require_login
+    # A sessao expirada e descartada aqui, e nao so ignorada: sem o
+    # reset_session o cookie velho continuaria viajando em toda requisicao.
+    if signed_in? && session_expired?
+      reset_session
+      return redirect_to login_path, alert: "Sua sessao expirou. Faca login de novo."
+    end
+
     return if signed_in?
 
     redirect_to login_path, alert: "Faca login para continuar"
