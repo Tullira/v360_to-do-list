@@ -28,8 +28,13 @@ jobs:
       - name: Scan for common Rails security vulnerabilities using static analysis
         run: bin/brakeman --no-pager
       
+      # O --update baixa a ruby-advisory-db do GitHub antes de checar. Sem ele
+      # o scan usa a copia embutida na gem bundler-audit, congelada na data de
+      # release daquela versao (hoje 0.9.3 no Gemfile.lock): a CI ficaria cega
+      # para toda CVE publicada depois. Atualiza o banco de advisories, nao as
+      # gems - nenhum comando aqui escreve no Gemfile.lock.
       - name: Scan for known security vulnerabilities in gems used
-        run: bin/bundler-audit
+        run: bin/bundler-audit check --update
       
   # O nome deste job e o nome do status check exigido na protecao da branch
   # master ("Require status checks to pass before merging"). Renomear aqui sem

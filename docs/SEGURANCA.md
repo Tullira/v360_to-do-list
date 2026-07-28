@@ -757,7 +757,9 @@ end
 - **Imagem de produção roda como não-root** (`Dockerfile:64-66`).
 - **Dependências atuais e sem CVE conhecida** (Rails 8.1.3, rack 3.2.6,
   nokogiri 1.19.4, puma 8.0.2), com `brakeman` + `bundler-audit` na CI e
-  Dependabot semanal.
+  Dependabot semanal. O `bundler-audit` roda com `check --update`, então o
+  banco de advisories é baixado do GitHub a cada execução em vez de usar a
+  cópia congelada dentro da gem.
 - **Droplet endurecida**: SSH só por chave, `ufw` liberando apenas 22/80/443.
 
 ---
@@ -770,7 +772,7 @@ Depois de aplicar qualquer correção:
 docker compose run --rm app bundle exec rspec > /rails/suite.log 2>&1   # ler o arquivo pelo host
 docker compose run --rm app bundle exec rubocop
 docker compose run --rm app bin/brakeman --no-pager
-docker compose run --rm app bin/bundler-audit
+docker compose run --rm app bin/bundler-audit check --update
 docker compose run --rm app bin/rails tailwindcss:build   # se alguma view mudou
 ```
 
