@@ -14,6 +14,13 @@ class UsersController < ApplicationController
     else
       render :new, status: :unprocessable_content
     end
+  # O indice unico do banco e a fonte de verdade; `validates :uniqueness` e uma
+  # cortesia de UX que faz SELECT antes do INSERT e perde a corrida entre dois
+  # cadastros simultaneos. Sem este rescue a corrida vira 500 - um erro que
+  # qualquer visitante consegue disparar.
+  rescue ActiveRecord::RecordNotUnique
+    @user.errors.add(:email, "ja esta em uso")
+    render :new, status: :unprocessable_content
   end
 
   private
