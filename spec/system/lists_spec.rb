@@ -22,6 +22,26 @@ RSpec.describe "Listas", type: :system do
     expect(page).to have_content("Voce ainda nao tem listas")
   end
 
+  # V-07: escrito ANTES de trocar a contagem em Ruby por agregacao no banco,
+  # justamente para provar que a troca nao muda o que o usuario ve.
+  it "mostra quantas tarefas de cada lista ja foram concluidas" do
+    lista = create(:list, user: owner, name: "Mercado")
+    create(:task, list: lista, completed: true)
+    create_list(:task, 2, list: lista, completed: false)
+
+    visit lists_path
+
+    expect(page).to have_content("1 de 3 tarefas concluidas")
+  end
+
+  it "mostra 'Sem tarefas' numa lista vazia" do
+    create(:list, user: owner, name: "Casa")
+
+    visit lists_path
+
+    expect(page).to have_content("Sem tarefas")
+  end
+
   it "so mostra o campo de nome depois de abrir o popup" do
     visit lists_path
 

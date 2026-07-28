@@ -1,7 +1,11 @@
 <div class="page">
+  <%# @lists.length, e nao .size: a relacao vem agrupada (ver
+      ListsController#lists_with_counts) e `size` numa relacao agrupada ainda
+      nao carregada devolve um Hash de contagens por id, nao um numero.
+      `length` carrega as linhas e conta o array. %>
   <%= render layout: "shared/page_header",
              locals: { title: "Minhas listas",
-                       subtitle: pluralize(@lists.size, "lista") } do %>
+                       subtitle: pluralize(@lists.length, "lista") } do %>
     <%= render layout: "shared/modal",
                locals: { trigger: "Nova lista",
                          title: "Nova lista",
@@ -31,8 +35,9 @@
   <% else %>
     <ul class="card row-divide">
       <% @lists.each do |list| %>
-        <% total = list.tasks.size %>
-        <% concluidas = list.tasks.count(&:completed?) %>
+        <%# Agregados no banco por ListsController#lists_with_counts. %>
+        <% total = list.tasks_count %>
+        <% concluidas = list.completed_count %>
         <li class="row items-center justify-between">
           <div class="min-w-0 flex-1">
             <%= link_to list.name, list_path(list),

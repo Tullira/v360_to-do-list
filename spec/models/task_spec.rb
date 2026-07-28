@@ -25,6 +25,23 @@ RSpec.describe Task, type: :model do
       expect(task.reload.description).to eq("Comprar leite integral")
       expect(task.reload.due_date).to eq(Date.new(2026, 8, 1))
     end
+
+    # V-07: description e `text` sem limite algum no banco.
+    it "recusa titulo acima de 200 caracteres" do
+      expect(build(:task, title: "a" * 201)).not_to be_valid
+    end
+
+    it "aceita titulo de exatamente 200 caracteres" do
+      expect(build(:task, title: "a" * 200)).to be_valid
+    end
+
+    it "recusa descricao acima de 10.000 caracteres" do
+      expect(build(:task, description: "a" * 10_001)).not_to be_valid
+    end
+
+    it "aceita descricao de exatamente 10.000 caracteres" do
+      expect(build(:task, description: "a" * 10_000)).to be_valid
+    end
   end
 
   describe "completed" do

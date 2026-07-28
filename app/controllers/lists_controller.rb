@@ -2,9 +2,7 @@ class ListsController < ApplicationController
   before_action :set_list, only: %i[show edit update destroy]
 
   def index
-    # includes: a listagem mostra o total e o quanto ja foi concluido de cada
-    # lista, entao carregar as tasks junto evita uma consulta por linha.
-    @lists = current_user.lists.includes(:tasks).order(created_at: :desc)
+    @lists = lists_with_counts
     @list = List.new
   end
 
@@ -22,7 +20,7 @@ class ListsController < ApplicationController
     if @list.save
       redirect_to lists_path
     else
-      @lists = current_user.lists.includes(:tasks).order(created_at: :desc)
+      @lists = lists_with_counts
       render :index, status: :unprocessable_content
     end
   end
@@ -41,6 +39,22 @@ class ListsController < ApplicationController
   end
 
   private
+
+  # Os dois contadores vem agregados do banco. Antes eram calculados em Ruby
+  # (`list.tasks.size` e `list.tasks.count(&:completed?)`), o que obrigava a
+  # carregar TODAS as tarefas de TODAS as listas na memoria a cada acesso a
+  # home so para exibir dois numeros por linha.
+  #
+  # COUNT(...) FILTER e sintaxe do Postgres, que e o unico banco do projeto.
+  def lists_with_counts
+    current_user.lists
+                .left_joins(:tasks)
+                .select("lists.*",
+                        "COUNT(tasks.id) AS tasks_count",
+                        "COUNT(tasks.id) FILTER (WHERE tasks.completed) AS completed_count")
+                .group("lists.id")
+                .order(created_at: :desc)
+  end
 
   # Busca escopada em current_user.lists: lista de outro usuario levanta
   # RecordNotFound e vira 404, indistinguivel de uma lista inexistente.
