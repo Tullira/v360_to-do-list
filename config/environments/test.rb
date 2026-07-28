@@ -20,7 +20,17 @@ Rails.application.configure do
 
   # Show full error reports.
   config.consider_all_requests_local = true
-  config.cache_store = :null_store
+  # memory_store, e nao null_store: o `rate_limit` do Rails conta as tentativas
+  # no cache, e com null_store o contador nunca sobe - o rate limiting passaria
+  # a suite inteira sem nunca ser exercitado.
+  #
+  # O store e resolvido no corpo da classe do controller, entao nao adianta
+  # trocar Rails.cache dentro do spec: tem de ser aqui.
+  #
+  # Como o processo e um so, o cache vive entre os exemplos. spec/rails_helper.rb
+  # limpa antes de cada um - sem isso os ~12 logins de lists_spec estourariam o
+  # limite e derrubariam specs sem nenhuma relacao com rate limiting.
+  config.cache_store = :memory_store
 
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable

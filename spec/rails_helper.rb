@@ -45,6 +45,14 @@ RSpec.configure do |config|
   config.include AuthHelpers, type: :request
   config.include AuthHelpers, type: :system
   config.include Rails.application.routes.url_helpers
+  # travel/travel_to: usados pelos specs de expiracao de sessao.
+  config.include ActiveSupport::Testing::TimeHelpers
+
+  # O cache de teste e um memory_store compartilhado pelo processo inteiro (ver
+  # config/environments/test.rb). Sem limpar entre os exemplos, os contadores de
+  # rate limit vazam de um spec para o outro e derrubam testes sem relacao -
+  # lists_spec sozinho faz mais de 10 logins do mesmo IP.
+  config.before { Rails.cache.clear }
 
   # As opcoes vao aqui, e nao num Capybara.register_driver, porque o
   # driven_by re-registra o driver :cuprite do zero (ver spec/support/capybara.rb).

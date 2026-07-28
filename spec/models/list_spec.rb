@@ -16,6 +16,15 @@ RSpec.describe List, type: :model do
     it "exige um dono" do
       expect(build(:list, user: nil)).not_to be_valid
     end
+
+    # V-07: sem limite, um POST com varios MB de texto e aceito e persistido.
+    it "recusa nome acima de 120 caracteres" do
+      expect(build(:list, name: "a" * 121)).not_to be_valid
+    end
+
+    it "aceita nome de exatamente 120 caracteres" do
+      expect(build(:list, name: "a" * 120)).to be_valid
+    end
   end
 
   describe "posse" do

@@ -11,22 +11,56 @@ nas camadas que o projeto ainda não construiu: controles anti-abuso, cabeçalho
 de segurança, ciclo de vida da sessão e endurecimento do CI/CD.
 
 Cada achado traz **onde está**, **por que é falha**, **como resolver** (com o
-código) e **como provar que corrigiu** (o spec de regressão). Nenhuma das
-correções abaixo foi aplicada ainda.
+código) e **como provar que corrigiu** (o spec de regressão).
 
-| # | Severidade | Falha |
-|---|---|---|
-| [V-01](#v-01) | 🔴 Alta | Zero rate limiting em login e cadastro |
-| [V-02](#v-02) | 🟠 Média-Alta | Nenhuma Content-Security-Policy |
-| [V-03](#v-03) | 🟠 Média | Sessão sem expiração e sem revogação |
-| [V-04](#v-04) | 🟠 Média | `config.hosts` vazio em produção |
-| [V-05](#v-05) | 🟡 Baixa-Média | Guard de prefetch desliga a sessão em qualquer método |
-| [V-06](#v-06) | 🟡 Média-Baixa | Política de senha fraca |
-| [V-07](#v-07) | 🟡 Média-Baixa | Sem limites de tamanho/quantidade |
-| [V-08](#v-08) | 🟡 Média-Baixa | Workflows sem `permissions:`, actions por tag móvel |
-| [V-09](#v-09) | 🟡 Baixa | Host key SSH por TOFU no deploy |
-| [V-10](#v-10) | 🟡 Baixa | Janela HTTP no primeiro deploy vs. `assume_ssl` |
-| [V-11](#v-11) | 🔵 Baixa | Corrida na validação de unicidade devolve 500 |
+**Status: as 11 foram corrigidas** na branch `security/hardening`. As seções
+abaixo continuam descrevendo a falha original e o raciocínio — é o registro de
+*por que* cada defesa existe, e é o que impede alguém de removê-la por parecer
+supérflua.
+
+| # | Severidade | Falha | Status |
+|---|---|---|---|
+| [V-01](#v-01) | 🔴 Alta | Zero rate limiting em login e cadastro | ✅ corrigida |
+| [V-02](#v-02) | 🟠 Média-Alta | Nenhuma Content-Security-Policy | ✅ corrigida |
+| [V-03](#v-03) | 🟠 Média | Sessão sem expiração e sem revogação | ✅ corrigida |
+| [V-04](#v-04) | 🟠 Média | `config.hosts` vazio em produção | ✅ corrigida |
+| [V-05](#v-05) | 🟡 Baixa-Média | Guard de prefetch desliga a sessão em qualquer método | ✅ corrigida |
+| [V-06](#v-06) | 🟡 Média-Baixa | Política de senha fraca | ✅ corrigida |
+| [V-07](#v-07) | 🟡 Média-Baixa | Sem limites de tamanho/quantidade | ✅ corrigida |
+| [V-08](#v-08) | 🟡 Média-Baixa | Workflows sem `permissions:`, actions por tag móvel | ✅ corrigida |
+| [V-09](#v-09) | 🟡 Baixa | Host key SSH por TOFU no deploy | ✅ corrigida |
+| [V-10](#v-10) | 🟡 Baixa | Janela HTTP no primeiro deploy vs. `assume_ssl` | ✅ corrigida |
+| [V-11](#v-11) | 🔵 Baixa | Corrida na validação de unicidade devolve 500 | ✅ corrigida |
+
+### Onde a implementação divergiu desta auditoria
+
+Três receitas daqui não sobreviveram ao contato com a execução:
+
+- **V-02, o nonce da CSP.** A sugestão era `request.session.id.to_s`. O id da
+  sessão é `nil` enquanto nada foi gravado nela, então o nonce saía **vazio** —
+  o `<script type="importmap">`, que é inline, seria bloqueado no primeiro
+  acesso de qualquer visitante. Pior: o valor passava a existir ou não conforme
+  a requisição anterior, o que fazia as duas respostas de login diferirem e
+  reintroduzia o canal de enumeração que a V-02 não deveria tocar. Foi o
+  `authorization_spec` que pegou. Agora o nonce é sorteado uma vez e guardado em
+  `session[:csp_nonce]`.
+- **V-06, limite de 72 bytes e `confirmation: true`.** Já vêm do
+  `has_secure_password` no Rails 7.1+. Repetir renderia duas mensagens de erro
+  para a mesma falha. O que faltava era só expor `password_confirmation` no
+  formulário e nos Strong Parameters.
+- **Permissions-Policy (item informativo).** `config.permissions_policy` emite
+  o cabeçalho antigo `Feature-Policy` — o próprio actionpack 8.1 registra que
+  Permissions-Policy "isn't yet supported by Rails". Feature-Policy foi
+  descontinuado e navegador atual o ignora. O cabeçalho real vai por
+  `config.action_dispatch.default_headers`.
+
+**Continua pendente, porque é operacional e não de código:**
+
+- preencher o secret `DOKKU_HOST_KEY` (V-09) — **sem ele o próximo deploy em
+  master falha de propósito**;
+- não divulgar o domínio antes da emissão do certificado (V-10);
+- trocar o `memory_store` por um store compartilhado se a aplicação passar de um
+  processo Puma (V-01), senão o limite efetivo vira N × 10.
 
 ---
 
@@ -690,10 +724,10 @@ end
 
 | Item | Onde | Como resolver |
 |---|---|---|
-| Sem `Permissions-Policy` | `config/initializers/` | Criar `permissions_policy.rb` negando `camera`, `microphone`, `geolocation`, `payment` e `usb` — a app não usa nenhum deles, é grátis |
+| ✅ Sem `Permissions-Policy` | `config/initializers/permissions_policy.rb` | Corrigido, mas **não** com `config.permissions_policy`: esse helper emite o `Feature-Policy` antigo, que navegador atual ignora. O cabeçalho real vai por `config.action_dispatch.default_headers` |
 | `db:prepare` automático a cada boot | `bin/docker-entrypoint:4-6` | Migration roda sozinha no deploy, sem revisão nem janela. Risco operacional, não de segurança: considerar um passo explícito de migration no workflow |
 | Sem verificação de e-mail nem recuperação de senha | — | Funcionalidade ausente; enquanto isso, o e-mail não pode ser tratado como identidade confiável |
-| `max_connections` em vez de `pool` | `config/database.yml:17` | O ActiveRecord ignora essa chave e usa o padrão 5. Com `RAILS_MAX_THREADS=3` não dá problema hoje, mas o valor não faz o que parece — renomear para `pool` |
+| ✅ `max_connections` em vez de `pool` | `config/database.yml` | Corrigido: renomeado para `pool`. O ActiveRecord ignorava a chave antiga e caía no padrão 5 |
 | `filter_parameters` inclui `:email` | `config/initializers/filter_parameter_logging.rb:7` | Nada a fazer: está acima do padrão do Rails, registrado como acerto |
 
 ---

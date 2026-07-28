@@ -11,6 +11,9 @@ Este documento descreve o que **está** protegido. O que ainda **não está** �
 auditoria de vulnerabilidades em aberto, com a correção de cada uma — fica em
 [`SEGURANCA.md`](SEGURANCA.md).
 
+O inventário das dependências — cada peça da stack, versão, papel e por que ela
+e não outra — fica em [`STACK.md`](STACK.md).
+
 ---
 
 ## 1. A decisão central: monólito
@@ -441,7 +444,7 @@ definida, a suíte de teste apontaria para o banco de desenvolvimento — e o
 | # | Decisão | Alternativa descartada | Motivo |
 |---|---|---|---|
 | 1 | Monólito full-stack | API-only + SPA | Cliente especificou só "Rails"; nenhum consumidor fora do navegador |
-| 2 | Sessão do Rails | JWT | Cookie `httponly` não é roubável por XSS; logout é imediato; menos código |
+| 2 | Sessão do Rails | JWT | Cookie `httponly` não é roubável por XSS; menos código. Sobre o logout, ver a ressalva abaixo |
 | 3 | `Task` sem `user_id` | Denormalizar o dono | Fonte única de verdade para posse |
 | 4 | 404 para recurso alheio | 403 | 403 permite enumerar ids alheios |
 | 5 | Tarefas aninhadas em listas | `/tasks/:id` no topo | Força a lista a vir da rota, já validada |
@@ -451,6 +454,22 @@ definida, a suíte de teste apontaria para o banco de desenvolvimento — e o
 | 9 | Criar por popup | Campo solto no topo da página | Campo solto é lido como barra de pesquisa; popup cabe título + descrição + prazo |
 | 10 | Prefetch do Turbo desligado | Manter ligado com o guard de sessão | Resposta capturada no hover é reusada depois e engole o flash; ganho imperceptível em páginas de ms |
 | 11 | `return_to` como token fixo | Passar a URL de destino | URL vinda do cliente é redirecionamento aberto |
+
+### Ressalva sobre a decisão 2: o alcance real do logout
+
+O cookie store guarda o estado **inteiramente no cliente** — o servidor não
+retém nada. Então `reset_session` no logout é imediato **no navegador do
+usuário**, mas não revoga coisa alguma: um cookie copiado antes (malware,
+máquina compartilhada, backup de perfil, log de proxy) continuaria autenticando.
+
+Revogar um cookie já copiado exigiria estado no servidor — uma tabela de
+sessões ou um `session_token` no `users`. É limitação **aceita
+conscientemente**: para o risco desta aplicação, a migration não se paga.
+
+O que fecha a janela é o prazo de validade (V-03): a sessão expira em 2 semanas
+pelo `expire_after`, que o Rails embute dentro do cookie assinado — o servidor
+recusa o cookie vencido mesmo que o cliente o reenvie —, com o carimbo
+`session[:created_at]` conferido no servidor como defesa em profundidade.
 
 ---
 

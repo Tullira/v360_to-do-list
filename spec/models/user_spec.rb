@@ -33,7 +33,9 @@ RSpec.describe User, type: :model do
     end
 
     it "aceita uma senha com 8 caracteres ou mais" do
-      expect(build(:user, password: "12345678")).to be_valid
+      # Nao use "12345678": desde a V-06 ela esta na COMMON_PASSWORDS, e o
+      # spec passaria a falhar pelo motivo errado.
+      expect(build(:user, password: "k7v2mq9z")).to be_valid
     end
 
     it "nao armazena a senha em texto puro" do
@@ -50,6 +52,50 @@ RSpec.describe User, type: :model do
     it "nao autentica com a senha errada" do
       user = create(:user, password: "senha_super_secreta")
       expect(user.authenticate("senha_errada")).to be(false)
+    end
+
+    # V-06
+    it "recusa senha acima de 72 bytes" do
+      # O bcrypt trunca em 72 bytes em silencio: aceitar mais que isso faria o
+      # usuario acreditar numa forca que a senha nao tem.
+      user = build(:user, password: "a" * 73)
+
+      expect(user).not_to be_valid
+      expect(user.errors[:password]).to be_present
+    end
+
+    it "aceita senha de exatamente 72 bytes" do
+      expect(build(:user, password: "a" * 72)).to be_valid
+    end
+
+    it "recusa as senhas mais comuns em vazamentos" do
+      User::COMMON_PASSWORDS.each do |comum|
+        user = build(:user, password: comum)
+
+        expect(user).not_to be_valid, "esperava que #{comum.inspect} fosse recusada"
+      end
+    end
+
+    it "recusa senha comum escrita em caixa diferente" do
+      expect(build(:user, password: "PassWord1")).not_to be_valid
+    end
+
+    it "recusa quando a confirmacao nao bate" do
+      user = build(:user, password: "senha_super_secreta",
+                          password_confirmation: "senha_diferente_1")
+
+      expect(user).not_to be_valid
+      expect(user.errors[:password_confirmation]).to be_present
+    end
+
+    it "aceita quando a confirmacao bate" do
+      expect(build(:user, password: "senha_super_secreta",
+                          password_confirmation: "senha_super_secreta")).to be_valid
+    end
+
+    it "nao exige confirmacao quando ela nao e informada" do
+      # Updates que nao mexem na senha nao devem passar a exigir o campo.
+      expect(build(:user, password: "senha_super_secreta")).to be_valid
     end
   end
 

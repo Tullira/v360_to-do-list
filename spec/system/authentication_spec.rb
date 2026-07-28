@@ -8,6 +8,7 @@ RSpec.describe "Autenticacao", type: :system do
       fill_in "Usuario", with: "ana"
       fill_in "Email", with: "ana@example.com"
       fill_in "Senha", with: "senha_super_secreta"
+      fill_in "Confirme a senha", with: "senha_super_secreta"
 
       click_button "Criar conta"
 
@@ -27,6 +28,7 @@ RSpec.describe "Autenticacao", type: :system do
       fill_in "Usuario", with: "outra"
       fill_in "Email", with: "ana@example.com"
       fill_in "Senha", with: "senha_super_secreta"
+      fill_in "Confirme a senha", with: "senha_super_secreta"
       click_button "Criar conta"
 
       expect(page).to have_content("Email has already been taken")
@@ -40,6 +42,7 @@ RSpec.describe "Autenticacao", type: :system do
       fill_in "Usuario", with: "ana"
       fill_in "Email", with: "outra@example.com"
       fill_in "Senha", with: "senha_super_secreta"
+      fill_in "Confirme a senha", with: "senha_super_secreta"
       click_button "Criar conta"
 
       expect(page).to have_content("Username has already been taken")
@@ -50,9 +53,36 @@ RSpec.describe "Autenticacao", type: :system do
       fill_in "Usuario", with: "ana"
       fill_in "Email", with: "ana@example.com"
       fill_in "Senha", with: "curta12"
+      fill_in "Confirme a senha", with: "curta12"
       click_button "Criar conta"
 
       expect(page).to have_content("Password is too short")
+    end
+
+    # V-06: sem recuperacao de senha no projeto, um erro de digitacao sem
+    # confirmacao trancaria a conta para sempre.
+    it "mostra erro quando a confirmacao da senha nao bate" do
+      visit signup_path
+      fill_in "Usuario", with: "ana"
+      fill_in "Email", with: "ana@example.com"
+      fill_in "Senha", with: "senha_super_secreta"
+      fill_in "Confirme a senha", with: "senha_diferente_1"
+      click_button "Criar conta"
+
+      expect(page).to have_content("Password confirmation doesn't match Password")
+      expect(User.count).to eq(0)
+    end
+
+    it "recusa uma senha comum demais" do
+      visit signup_path
+      fill_in "Usuario", with: "ana"
+      fill_in "Email", with: "ana@example.com"
+      fill_in "Senha", with: "password1"
+      fill_in "Confirme a senha", with: "password1"
+      click_button "Criar conta"
+
+      expect(page).to have_content("facil demais de adivinhar")
+      expect(User.count).to eq(0)
     end
   end
 

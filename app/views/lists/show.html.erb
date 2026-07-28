@@ -53,12 +53,14 @@
     <ul class="card row-divide">
       <% @tasks.each do |task| %>
         <li class="row" data-completed="<%= task.completed %>">
-          <%# Sem botao de submit: o onchange envia o formulario. A label fica
-              sr-only, nunca hidden - `check "Concluida"` precisa encontra-la. %>
-          <%= form_with model: [ @list, task ], url: list_task_path(@list, task), method: :patch, class: "pt-0.5" do |f| %>
+          <%# Sem botao de submit: o Stimulus envia o formulario na mudanca. A
+              label fica sr-only, nunca hidden - `check "Concluida"` precisa
+              encontra-la. %>
+          <%= form_with model: [ @list, task ], url: list_task_path(@list, task), method: :patch,
+                        class: "pt-0.5",
+                        data: { controller: "autosubmit", action: "change->autosubmit#submit" } do |f| %>
             <%= f.check_box :completed,
                   id: "task_#{task.id}_completed",
-                  onchange: "this.form.requestSubmit()",
                   class: "checkbox" %>
             <%= f.label :completed, "Concluida", for: "task_#{task.id}_completed", class: "sr-only" %>
           <% end %>
