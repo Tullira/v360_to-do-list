@@ -16,7 +16,14 @@ class ApplicationController < ActionController::Base
   #   session_options[:skip] impede que ele responda com Set-Cookie. Sem isso a
   #                   sessao que ele carregava (buscada antes de a mensagem
   #                   existir) sobrescreve a mais nova, e o flash some igual.
+  #
+  # O cabecalho vem do cliente, entao ele so vale onde prefetch de fato existe:
+  # navegacao, que e sempre GET (ou HEAD). Aceita-lo em POST/DELETE deixaria
+  # qualquer requisicao desligar a gravacao da sessao - e um logout que nao
+  # responde Set-Cookie roda o reset_session no servidor mas deixa o cookie
+  # antigo valido no navegador, ou seja, nao desloga ninguem.
   def isolate_prefetch_from_session
+    return unless request.get? || request.head?
     return unless request.headers["X-Sec-Purpose"] == "prefetch"
 
     flash.keep
@@ -34,6 +41,13 @@ class ApplicationController < ActionController::Base
   helper_method :signed_in?
 
   def require_login
+    # A sessao expirada e descartada aqui, e nao so ignorada: sem o
+    # reset_session o cookie velho continuaria viajando em toda requisicao.
+    if signed_in? && session_expired?
+      reset_session
+      return redirect_to login_path, alert: "Sua sessao expirou. Faca login de novo."
+    end
+
     return if signed_in?
 
     redirect_to login_path, alert: "Faca login para continuar"

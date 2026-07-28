@@ -1,33 +1,35 @@
-<div class="mx-auto mt-16 w-full max-w-sm">
-  <div class="card p-6">
-    <h1 class="text-xl font-semibold tracking-tight text-slate-900">Criar conta</h1>
-    <p class="mt-1 text-sm text-slate-500">Leva menos de um minuto.</p>
+<%= render layout: "shared/auth",
+           locals: { title: "Criar conta",
+                     subtitle: "Leva menos de um minuto.",
+                     footer_text: "Ja tem conta?",
+                     footer_link_label: "Entrar",
+                     footer_link_path: login_path } do %>
+  <%= form_with model: @user, url: signup_path, method: :post, class: "space-y-4" do |f| %>
+    <%= render "shared/errors", record: @user %>
 
-    <%= form_with model: @user, url: signup_path, method: :post, class: "mt-6 space-y-4" do |f| %>
-      <%= render "shared/errors", record: @user %>
+    <div>
+      <%= f.label :username, "Usuario", class: "field-label" %>
+      <%= f.text_field :username, autocomplete: "username", autofocus: true, class: "field" %>
+    </div>
 
-      <div>
-        <%= f.label :username, "Usuario", class: "field-label" %>
-        <%= f.text_field :username, autocomplete: "username", autofocus: true, class: "field" %>
-      </div>
+    <div>
+      <%= f.label :email, "Email", class: "field-label" %>
+      <%= f.email_field :email, autocomplete: "email", class: "field" %>
+    </div>
 
-      <div>
-        <%= f.label :email, "Email", class: "field-label" %>
-        <%= f.email_field :email, autocomplete: "email", class: "field" %>
-      </div>
+    <div>
+      <%= f.label :password, "Senha", class: "field-label" %>
+      <%= f.password_field :password, autocomplete: "new-password", class: "field" %>
+      <p class="field-hint">Minimo de 8 caracteres.</p>
+    </div>
 
-      <div>
-        <%= f.label :password, "Senha", class: "field-label" %>
-        <%= f.password_field :password, autocomplete: "new-password", class: "field" %>
-        <p class="field-hint">Minimo de 8 caracteres.</p>
-      </div>
+    <%# Nao existe recuperacao de senha em lugar nenhum do projeto: sem esta
+        confirmacao, um erro de digitacao aqui tranca a conta para sempre. %>
+    <div>
+      <%= f.label :password_confirmation, "Confirme a senha", class: "field-label" %>
+      <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "field" %>
+    </div>
 
-      <%= f.submit "Criar conta", class: "btn btn-primary w-full" %>
-    <% end %>
-  </div>
-
-  <p class="mt-6 text-center text-sm text-slate-600">
-    Ja tem conta?
-    <%= link_to "Entrar", login_path, class: "font-medium text-indigo-600 hover:text-indigo-500" %>
-  </p>
-</div>
+    <%= f.submit "Criar conta", class: "btn btn-primary mt-2 w-full" %>
+  <% end %>
+<% end %>

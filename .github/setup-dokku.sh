@@ -66,10 +66,13 @@ if [ -z "$(dokku config:get "$APP_NAME" SECRET_KEY_BASE 2>/dev/null || true)" ];
   dokku config:set --no-restart "$APP_NAME" "SECRET_KEY_BASE=$(openssl rand -hex 64)"
 fi
 
+# APP_HOST alimenta o config.hosts de producao. Sem ele a aplicacao nao sobe:
+# lista vazia faria o Rails aceitar qualquer cabecalho Host.
 dokku config:set --no-restart "$APP_NAME" \
   RAILS_ENV=production \
   RAILS_LOG_TO_STDOUT=true \
-  RAILS_MAX_THREADS=3
+  RAILS_MAX_THREADS=3 \
+  "APP_HOST=$APP_DOMAIN"
 
 # --------------------------------------------------------------------------
 # Banco
@@ -169,7 +172,15 @@ if dokku ps:report "$APP_NAME" --deployed 2>/dev/null | grep -qw true; then
   # Renovacao automatica: o cron cuida disso, nao precisa de auto-renew manual.
   dokku letsencrypt:cron-job --add
 else
+  # A aplicacao roda com config.assume_ssl = true, que faz o Rails tratar toda
+  # requisicao como HTTPS independentemente da conexao real: o redirect do
+  # force_ssl nao dispara e os cookies saem marcados Secure. Enquanto o
+  # certificado nao existe, isso significa HSTS anunciado em conexao em claro e
+  # cookie de sessao trafegando sem criptografia. A correcao aqui e
+  # operacional, nao de codigo - por isso o aviso.
   log "SSL pulado: $APP_NAME ainda nao tem deploy."
+  echo "    !!! ATE O CERTIFICADO SER EMITIDO A APP RESPONDE EM HTTP PURO."
+  echo "    !!! NAO divulgue o dominio nem crie contas reais antes disso."
   echo "    Faca o primeiro deploy (push em master) e rode este script de novo."
 fi
 

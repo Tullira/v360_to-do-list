@@ -38,4 +38,29 @@ RSpec.describe "Flash e prefetch do Turbo", type: :request do
     get login_path
     expect(response.body).not_to include("Faca login para continuar")
   end
+
+  # V-05: o guard confia num cabecalho que o cliente controla. Sem filtrar por
+  # metodo HTTP, qualquer requisicao que ESCREVE sessao pode desligar o
+  # Set-Cookie da resposta - e sessao que nao chega ao navegador nao muda nada.
+  it "desloga de verdade mesmo com o cabecalho de prefetch forjado" do
+    owner = create(:user)
+    sign_in_via_request(owner)
+
+    delete logout_path, headers: { "X-Sec-Purpose" => "prefetch" }
+
+    # Se o reset_session rodou so no servidor e o navegador ficou com o cookie
+    # antigo, esta requisicao ainda passa autenticada e nao redireciona.
+    get lists_path
+    expect(response).to redirect_to(login_path)
+  end
+
+  it "nao deixa o prefetch forjado impedir a gravacao da sessao no login" do
+    owner = create(:user)
+
+    post login_path, params: { email: owner.email, password: AuthHelpers::DEFAULT_PASSWORD },
+                     headers: { "X-Sec-Purpose" => "prefetch" }
+
+    get lists_path
+    expect(response).to have_http_status(:ok)
+  end
 end

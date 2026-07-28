@@ -14,7 +14,11 @@ default: &default
   encoding: unicode
   # For details on connection pooling, see Rails configuration guide
   # https://guides.rubyonrails.org/configuring.html#database-pooling
-  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  #
+  # `pool`, e nao `max_connections`: o ActiveRecord ignora a segunda chave e
+  # cai no padrao 5. Com RAILS_MAX_THREADS=3 isso nao dava problema, mas o
+  # valor nao fazia o que aparentava fazer.
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   host: <%= ENV.fetch("DB_HOST", "localhost") %>
   port: <%= ENV.fetch("DB_PORT", 5432) %>
   username: <%= ENV.fetch("DB_USERNAME", "postgres") %>

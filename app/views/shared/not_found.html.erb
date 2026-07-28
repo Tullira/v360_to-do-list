@@ -1,13 +1,18 @@
-<div class="mx-auto mt-24 max-w-md text-center">
-  <span class="mx-auto flex size-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-    <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-      <path stroke-linecap="round" stroke-linejoin="round"
-            d="M9.75 9.75h.008v.008H9.75V9.75Zm4.5 0h.008v.008h-.008V9.75ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-6.75 3.75a3.75 3.75 0 0 0-4.5 0" />
-    </svg>
+<%# Pagina 404.
+
+    Precisa continuar ESTATICA. spec/requests/authorization_spec.rb compara
+    [status, body] de um recurso de outro usuario com os de um id inexistente
+    usando `eq`: as duas respostas tem de ser identicas byte a byte, ou daria
+    para enumerar os recursos alheios pela diferenca. Nada de id pedido, nome
+    do recurso, timestamp ou nonce aqui dentro.
+%>
+<div class="mx-auto mt-24 max-w-md px-4 text-center">
+  <span class="mx-auto flex size-12 items-center justify-center rounded-full bg-surface-sunken text-fg-subtle">
+    <%= render "shared/icon", name: "face-frown", class: "size-6" %>
   </span>
 
-  <h1 class="mt-4 text-2xl font-semibold tracking-tight text-slate-900">Recurso nao encontrado</h1>
-  <p class="mt-2 text-slate-600">
+  <h1 class="mt-4 text-2xl font-semibold tracking-tight text-fg">Recurso nao encontrado</h1>
+  <p class="mt-2 text-fg-muted">
     O item que voce procurou nao existe ou nao esta disponivel.
   </p>
 

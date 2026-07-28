@@ -1,0 +1,14 @@
+<%# Card de formulario das telas de edicao, para que "Renomear lista" e
+    "Editar tarefa" tenham o mesmo respiro e a mesma hierarquia.
+
+    Usado com `render layout:`, com o form_with no bloco.
+
+    Local: title.
+%>
+<div class="card p-6">
+  <h1 class="text-xl font-semibold tracking-tight text-fg"><%= title %></h1>
+
+  <div class="mt-6">
+    <%= yield %>
+  </div>
+</div>

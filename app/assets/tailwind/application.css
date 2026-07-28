@@ -1,61 +1,488 @@
 @import "tailwindcss";
 
-/* Componentes usados pelas views. Ficam aqui, e nao repetidos em cada ERB,
-   para que botao e campo tenham a mesma aparencia em toda a aplicacao. */
-@layer components {
-  .card {
-    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+/* ---------------------------------------------------------------------------
+   Tokens semanticos.
+
+   As views nunca citam uma cor literal (`slate-500`, `indigo-600`): elas citam
+   um papel (`fg-muted`, `accent`). Isso e o que torna o tema escuro possivel
+   sem tocar em nenhuma view - so os valores abaixo mudam.
+
+   `@theme inline` faz o Tailwind escrever `var(--fg-muted)` dentro da utility
+   em vez de copiar o valor. Sem o `inline` a cor seria congelada na hora do
+   build e a media query de tema escuro nao teria efeito nenhum.
+--------------------------------------------------------------------------- */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-sunken: var(--surface-sunken);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-faint: var(--fg-faint);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-text: var(--accent-text);
+
+  --color-danger: var(--danger);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-border: var(--danger-border);
+  --color-danger-text: var(--danger-text);
+
+  --color-success-subtle: var(--success-subtle);
+  --color-success-border: var(--success-border);
+  --color-success-text: var(--success-text);
+
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-border: var(--warning-border);
+  --color-warning-text: var(--warning-text);
+}
+
+/* Fora do bloco `inline`: a fonte nao muda com o tema, e dentro de
+   `@theme inline` o Tailwind nao chega a emitir a custom property quando
+   nenhuma utility a referencia - o preflight caia no fallback dele. */
+@theme {
+  /* Stack do sistema: nenhuma webfont externa. O container nao tem rede
+     garantida e a CSP planejada em docs/SEGURANCA.md (V-02) bloquearia o CDN.
+
+     Nomes concretos ANTES de ui-sans-serif/system-ui de proposito: o Chrome
+     considera essas duas palavras-chave sempre disponiveis, entao a lista
+     nunca chega nos nomes seguintes. Num ambiente sem fonte de UI definida
+     - o container headless, por exemplo - isso cai numa monoespacada. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, "Liberation Sans", "Noto Sans", sans-serif,
+               "Apple Color Emoji", "Segoe UI Emoji";
+
+  --default-font-family: var(--font-sans);
+}
+
+/* Tema claro (padrao) */
+:root {
+  --canvas: #f7f7f8;
+  --surface: #ffffff;
+  --surface-hover: #f4f4f5;
+  --surface-sunken: #ececee;
+
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+
+  --fg: #18181b;
+  --fg-muted: #52525b;
+  --fg-subtle: #71717a;
+  --fg-faint: #d4d4d8;
+
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-active: #3730a3;
+  --accent-fg: #ffffff;
+  --accent-subtle: #eef2ff;
+  --accent-text: #4f46e5;
+
+  --danger: #dc2626;
+  --danger-subtle: #fef2f2;
+  --danger-border: #fecaca;
+  --danger-text: #b91c1c;
+
+  --success-subtle: #f0fdf4;
+  --success-border: #bbf7d0;
+  --success-text: #15803d;
+
+  --warning-subtle: #fffbeb;
+  --warning-border: #fde68a;
+  --warning-text: #b45309;
+}
+
+/* Tema escuro: so CSS, sem JS, sem toggle, sem persistencia. O Cuprite roda
+   em `light` por padrao, entao a suite continua exercitando o tema claro. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #09090b;
+    --surface: #131316;
+    --surface-hover: #1c1c21;
+    --surface-sunken: #232329;
+
+    --border: #27272a;
+    --border-strong: #3f3f46;
+
+    --fg: #fafafa;
+    --fg-muted: #a1a1aa;
+    --fg-subtle: #8a8a93;
+    --fg-faint: #3f3f46;
+
+    --accent: #6366f1;
+    --accent-hover: #7c7ff5;
+    --accent-active: #4f46e5;
+    --accent-fg: #ffffff;
+    --accent-subtle: #1e1b4b;
+    --accent-text: #a5b4fc;
+
+    --danger: #ef4444;
+    --danger-subtle: #2a1214;
+    --danger-border: #7f1d1d;
+    --danger-text: #fca5a5;
+
+    --success-subtle: #0d2318;
+    --success-border: #14532d;
+    --success-text: #86efac;
+
+    --warning-subtle: #2a1f07;
+    --warning-border: #78350f;
+    --warning-text: #fcd34d;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+--------------------------------------------------------------------------- */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    font-family: var(--font-sans);
   }
 
+  body {
+    background-color: var(--canvas);
+    color: var(--fg);
+  }
+
+  /* Numerais de largura fixa: sem isso os contadores ("7 de 10 concluidas")
+     mudam de largura conforme o digito e as linhas da lista "dancam". */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: var(--accent-subtle);
+    color: var(--accent-text);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Componentes usados pelas views. Ficam aqui, e nao repetidos em cada ERB,
+   para que botao e campo tenham a mesma aparencia em toda a aplicacao.
+--------------------------------------------------------------------------- */
+@layer components {
+  /* --- Estrutura de pagina ------------------------------------------------ */
+  /* Sem padding horizontal nem inferior: quem cuida disso e o <main> do
+     layout, um nivel acima. Repetir aqui dobraria o recuo. */
+  .page {
+    @apply mx-auto w-full max-w-2xl pt-10;
+  }
+
+  .page-narrow {
+    @apply mx-auto w-full max-w-md pt-10;
+  }
+
+  .page-title {
+    @apply truncate text-2xl font-semibold tracking-tight;
+    color: var(--fg);
+    letter-spacing: -0.02em;
+  }
+
+  .page-subtitle {
+    @apply mt-1 text-sm;
+    color: var(--fg-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .section-label {
+    @apply text-xs font-semibold uppercase tracking-wider;
+    color: var(--fg-subtle);
+  }
+
+  .meta {
+    @apply text-xs;
+    color: var(--fg-subtle);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .divider {
+    @apply border-t;
+    border-color: var(--border);
+  }
+
+  /* Link visivel apenas quando recebe foco: o primeiro Tab da pagina pula
+     o cabecalho e vai direto para o conteudo. */
+  /* Fora da tela ate receber foco. Deslocar por transform nao serve: o
+     elemento continua ocupando a area visivel e vaza no topo da pagina. */
+  .skip-link {
+    @apply absolute top-4 z-50 rounded-lg px-4 py-2 text-sm font-medium shadow-lg;
+    left: -9999px;
+    background-color: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--border-strong);
+  }
+
+  .skip-link:focus {
+    left: 1rem;
+  }
+
+  /* --- Superficies -------------------------------------------------------- */
+  .card {
+    @apply rounded-xl border;
+    background-color: var(--surface);
+    border-color: var(--border);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.03);
+  }
+
+  /* Linha de lista dentro de um .card: o hover e o unico feedback de que a
+     linha inteira e uma area interativa. */
+  .row {
+    @apply flex items-start gap-3 px-4 py-3 transition-colors;
+  }
+
+  .row:hover {
+    background-color: var(--surface-hover);
+  }
+
+  .row-divide > * + * {
+    border-top: 1px solid var(--border);
+  }
+
+  /* --- Botoes ------------------------------------------------------------- */
   .btn {
     @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg
-           px-4 py-2 text-sm font-medium transition-colors
-           focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600;
+           px-4 py-2 text-sm font-medium whitespace-nowrap
+           transition-[background-color,border-color,color,box-shadow] duration-150;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .btn-sm {
+    @apply px-2.5 py-1.5 text-sm;
   }
 
   .btn-primary {
-    @apply bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 active:bg-indigo-700;
+    background-color: var(--accent);
+    color: var(--accent-fg);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.08);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--accent-hover);
+  }
+
+  .btn-primary:active {
+    background-color: var(--accent-active);
   }
 
   .btn-secondary {
-    @apply border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50;
+    background-color: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04);
   }
 
+  .btn-secondary:hover {
+    background-color: var(--surface-hover);
+  }
+
+  /* Ghost e danger sao acoes de linha: mais compactas que o botao padrao.
+     A regra vem depois de .btn de proposito, para vencer o px-4 py-2. */
   .btn-ghost {
-    @apply px-2.5 py-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900;
+    @apply px-2.5 py-1.5;
+    color: var(--fg-muted);
+  }
+
+  .btn-ghost:hover {
+    background-color: var(--surface-hover);
+    color: var(--fg);
   }
 
   .btn-danger {
-    @apply px-2.5 py-1.5 text-slate-500 hover:bg-red-50 hover:text-red-700;
+    @apply px-2.5 py-1.5;
+    color: var(--fg-muted);
   }
 
+  .btn-danger:hover {
+    background-color: var(--danger-subtle);
+    color: var(--danger-text);
+  }
+
+  .link {
+    @apply font-medium transition-colors;
+    color: var(--accent-text);
+  }
+
+  .link:hover {
+    color: var(--accent-hover);
+  }
+
+  /* --- Formularios -------------------------------------------------------- */
   .field-label {
-    @apply mb-1 block text-sm font-medium text-slate-700;
+    @apply mb-1.5 block text-sm font-medium;
+    color: var(--fg);
   }
 
   .field {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm
-           placeholder:text-slate-400
-           focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30;
+    @apply w-full rounded-lg px-3 py-2 text-sm transition-[border-color,box-shadow] duration-150;
+    background-color: var(--surface);
+    color: var(--fg);
+    border: 1px solid var(--border-strong);
+  }
+
+  .field::placeholder {
+    color: var(--fg-subtle);
+  }
+
+  .field:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
   }
 
   .field-hint {
-    @apply mt-1 text-xs text-slate-500;
+    @apply mt-1.5 text-xs;
+    color: var(--fg-subtle);
   }
 
+  /* accent-color pinta o check nativo sem esconder o input. Um "checkbox
+     custom" que troca o input por um span quebraria `check "Concluida"`. */
   .checkbox {
-    @apply size-4 cursor-pointer rounded border-slate-300 text-indigo-600
-           focus:ring-2 focus:ring-indigo-500/40;
+    @apply size-[1.125rem] shrink-0 cursor-pointer rounded;
+    accent-color: var(--accent);
   }
 
+  .checkbox:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* --- Indicadores -------------------------------------------------------- */
+  /* A borda vai em box-shadow inset, nao em `ring-*`: nao depende das custom
+     properties internas do Tailwind e nao ocupa espaco no layout. */
   .badge {
-    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1;
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5
+           text-xs font-medium;
   }
 
+  .badge-neutral {
+    background-color: var(--surface-sunken);
+    color: var(--fg-muted);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+
+  .badge-success {
+    background-color: var(--success-subtle);
+    color: var(--success-text);
+    box-shadow: inset 0 0 0 1px var(--success-border);
+  }
+
+  .badge-warning {
+    background-color: var(--warning-subtle);
+    color: var(--warning-text);
+    box-shadow: inset 0 0 0 1px var(--warning-border);
+  }
+
+  .badge-danger {
+    background-color: var(--danger-subtle);
+    color: var(--danger-text);
+    box-shadow: inset 0 0 0 1px var(--danger-border);
+  }
+
+  /* <progress> nativo: o valor vai em atributo, nao em `style="width:X%"`.
+     Alem de ja vir com semantica de acessibilidade, nao conflita com a CSP
+     planejada em docs/SEGURANCA.md (V-02), que barraria estilo inline. */
+  .progress {
+    @apply block h-1 w-full appearance-none overflow-hidden rounded-full border-0;
+    background-color: var(--surface-sunken);
+  }
+
+  .progress::-webkit-progress-bar {
+    background-color: var(--surface-sunken);
+    border-radius: 9999px;
+  }
+
+  .progress::-webkit-progress-value {
+    background-color: var(--accent);
+    border-radius: 9999px;
+  }
+
+  .progress::-moz-progress-bar {
+    background-color: var(--accent);
+    border-radius: 9999px;
+  }
+
+  /* --- Mensagens ---------------------------------------------------------- */
+  .alert {
+    @apply flex items-start gap-2.5 rounded-lg border px-4 py-3 text-sm;
+  }
+
+  .alert-danger {
+    background-color: var(--danger-subtle);
+    border-color: var(--danger-border);
+    color: var(--danger-text);
+  }
+
+  .alert-success {
+    background-color: var(--success-subtle);
+    border-color: var(--success-border);
+    color: var(--success-text);
+  }
+
+  /* --- Modal -------------------------------------------------------------- */
   /* O preflight do Tailwind zera a margem de tudo, inclusive o `margin: auto`
      que o navegador usa para centralizar um <dialog> modal - dai o m-auto. */
   .modal-panel {
-    @apply m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-slate-200
-           bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/40;
+    @apply m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border p-0;
+    background-color: var(--surface);
+    border-color: var(--border);
+    color: var(--fg);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.15), 0 8px 10px -6px rgb(0 0 0 / 0.15);
+  }
+
+  .modal-panel::backdrop {
+    background-color: rgb(9 9 11 / 0.5);
+  }
+}
+
+/* Animacao apenas na ABERTURA. Nao ha transicao de fechamento (`display` com
+   allow-discrete) de proposito: ela manteria o dialog no DOM por mais alguns
+   frames depois do close(), e ha specs que afirmam `not_to have_field(...)`
+   logo apos clicar em "Cancelar". */
+@media (prefers-reduced-motion: no-preference) {
+  .modal-panel[open] {
+    animation: modal-in 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .modal-panel[open]::backdrop {
+    animation: backdrop-in 160ms ease-out;
+  }
+
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+
+  @keyframes backdrop-in {
+    from {
+      opacity: 0;
+    }
   }
 }
