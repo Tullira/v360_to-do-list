@@ -44,16 +44,24 @@
   --color-warning-subtle: var(--warning-subtle);
   --color-warning-border: var(--warning-border);
   --color-warning-text: var(--warning-text);
+}
 
+/* Fora do bloco `inline`: a fonte nao muda com o tema, e dentro de
+   `@theme inline` o Tailwind nao chega a emitir a custom property quando
+   nenhuma utility a referencia - o preflight caia no fallback dele. */
+@theme {
   /* Stack do sistema: nenhuma webfont externa. O container nao tem rede
-     garantida e a CSP planejada em docs/SEGURANCA.md (V-02) bloquearia o CDN. */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-               "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+     garantida e a CSP planejada em docs/SEGURANCA.md (V-02) bloquearia o CDN.
+
+     Nomes concretos ANTES de ui-sans-serif/system-ui de proposito: o Chrome
+     considera essas duas palavras-chave sempre disponiveis, entao a lista
+     nunca chega nos nomes seguintes. Num ambiente sem fonte de UI definida
+     - o container headless, por exemplo - isso cai numa monoespacada. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, "Liberation Sans", "Noto Sans", sans-serif,
                "Apple Color Emoji", "Segoe UI Emoji";
 
-  --radius-control: 0.5rem;
-  --radius-card: 0.75rem;
-  --radius-panel: 1rem;
+  --default-font-family: var(--font-sans);
 }
 
 /* Tema claro (padrao) */
@@ -137,6 +145,7 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    font-family: var(--font-sans);
   }
 
   body {
@@ -210,16 +219,18 @@
 
   /* Link visivel apenas quando recebe foco: o primeiro Tab da pagina pula
      o cabecalho e vai direto para o conteudo. */
+  /* Fora da tela ate receber foco. Deslocar por transform nao serve: o
+     elemento continua ocupando a area visivel e vaza no topo da pagina. */
   .skip-link {
-    @apply absolute left-4 top-4 z-50 rounded-lg px-4 py-2 text-sm font-medium shadow-lg;
+    @apply absolute top-4 z-50 rounded-lg px-4 py-2 text-sm font-medium shadow-lg;
+    left: -9999px;
     background-color: var(--surface);
     color: var(--fg);
     border: 1px solid var(--border-strong);
-    transform: translateY(-150%);
   }
 
   .skip-link:focus {
-    transform: translateY(0);
+    left: 1rem;
   }
 
   /* --- Superficies -------------------------------------------------------- */
