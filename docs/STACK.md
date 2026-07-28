@@ -108,7 +108,9 @@ nome de banco por ambiente (`DB_NAME_DEVELOPMENT`, `DB_NAME_TEST`,
 > `db:test:prepare` o apagaria. A mesma regra vale na CI, e por isso o
 > `ci.yml` também usa variáveis discretas.
 
-Pool: `max_connections` sai de `RAILS_MAX_THREADS` (default 5).
+Pool: `pool` sai de `RAILS_MAX_THREADS` (default 5). A chave já se chamou
+`max_connections`, que o Active Record **ignora** — caía no padrão 5 sem que
+ninguém percebesse.
 
 Três migrations, nada de multi-database: `users`, `lists`, `tasks`. O schema e os
 índices (incluindo o índice funcional em `lower(username)`) estão detalhados na
@@ -137,8 +139,16 @@ Sorcery, `authentication-zero`): são quatro ações de controller e o Rails já
 `has_secure_password`, `reset_session` e o cookie assinado — uma dependência a
 mais aqui só adicionaria superfície e configuração.
 
-O cookie de sessão é assinado e criptografado por `SECRET_KEY_BASE`, `httponly` e
-`samesite=lax`. Trocar `SECRET_KEY_BASE` desloga todo mundo.
+O cookie de sessão é assinado e criptografado por `SECRET_KEY_BASE`, `httponly`,
+`samesite=lax` e `secure` em produção (`config/initializers/session_store.rb`).
+Trocar `SECRET_KEY_BASE` desloga todo mundo.
+
+A sessão **expira em 2 semanas**, em duas camadas. O `expire_after` do cookie
+store não é só uma dica ao navegador: o Rails embute a expiração dentro do
+cookie assinado, então o servidor recusa o cookie vencido mesmo que o cliente
+ignore o atributo `Expires`. Além dele, `SessionManagement` carimba
+`session[:created_at]` e confere a cada requisição — defesa em profundidade, que
+passa a valer no dia em que alguém remover o `expire_after` ou trocar o store.
 
 As garantias em volta disso — `reset_session` antes de gravar o `user_id`,
 paridade de tempo de bcrypt no e-mail inexistente, 404 em vez de 403 — são
@@ -192,10 +202,17 @@ consequências que aparecem em teste e em código:
 
 ### Stimulus 1.3.4
 
-Um único controller: `dialog_controller.js`, que abre e fecha o `<dialog>` nativo
-de criação. Ele reabre o popup sozinho quando a validação falha
-(`data-dialog-open-value`), senão o erro e o que a pessoa digitou sumiriam junto
-com o popup fechado.
+Dois controllers:
+
+- **`dialog_controller.js`** — abre e fecha o `<dialog>` nativo de criação.
+  Reabre o popup sozinho quando a validação falha (`data-dialog-open-value`),
+  senão o erro e o que a pessoa digitou sumiriam junto com o popup fechado.
+- **`autosubmit_controller.js`** — envia o formulário quando o checkbox de
+  "concluída" muda. Existe para tirar o `onchange="..."` inline das views:
+  handler inline exige `'unsafe-inline'` em `script-src`, e essa única palavra
+  esvaziaria a CSP inteira.
+
+`eagerLoadControllersFrom` registra os dois sozinho; não há nada a declarar.
 
 ### Tailwind CSS 4.6.0
 
@@ -232,8 +249,10 @@ Duas armadilhas já pagas:
   de tudo, inclusive o `margin: auto` que o navegador usa para centralizar um
   `<dialog>` modal.
 - **Fonte é stack do sistema, nenhuma webfont externa.** O container não tem rede
-  garantida, e a CSP planejada em [`SEGURANCA.md`](SEGURANCA.md) (V-02)
-  bloquearia o CDN.
+  garantida, e a CSP (V-02, já aplicada) bloquearia o CDN. Os nomes concretos
+  vêm **antes** de `ui-sans-serif`/`system-ui`: o Chrome considera essas duas
+  palavras-chave sempre disponíveis, então a lista nunca alcançaria os nomes
+  seguintes e, num ambiente sem fonte de UI definida, cairia numa monoespaçada.
 
 ### Ícones
 
@@ -259,7 +278,7 @@ TDD é obrigatório: nada em `app/` sem um teste falhando antes.
 | `capybara` | 3.40.0 | DSL de navegador |
 | `cuprite` | 0.17 (Ferrum 0.17.2) | Driver CDP — Chrome headless **de verdade**, sem Selenium e sem chromedriver |
 
-Estado atual: **96 exemplos, 95.65% de cobertura**.
+Estado atual: **143 exemplos, 96.36% de cobertura**.
 
 ### Configuração que não é óbvia
 
@@ -291,7 +310,12 @@ runner do GitHub (`ci.yml`).
 | Model | `spec/models/` | Validações, associações, defaults, normalização, ausência de `user_id` em `tasks` |
 | Sistema | `spec/system/` | Fluxos de usuário no Chrome headless |
 | Request | `spec/requests/authorization_spec.rb` | Cenários que um navegador **não produz**: forjar `user_id`/`list_id`/`role` no corpo, indistinguibilidade 404, paridade de tempo no login, CSRF |
-| Request | `spec/requests/flash_spec.rb` | Prefetch não consome nem sobrescreve a sessão |
+| Request | `spec/requests/flash_spec.rb` | Prefetch não consome nem sobrescreve a sessão, e não desliga o `Set-Cookie` fora de GET/HEAD |
+| Request | `spec/requests/rate_limit_spec.rb` | Limite por IP em login e cadastro, idêntico para e-mail existente e inexistente |
+| Request | `spec/requests/session_expiration_spec.rb` | As duas camadas de expiração, cada uma isolada da outra |
+| Request | `spec/requests/content_security_policy_spec.rb` | CSP sem `unsafe-inline` e nonce que não quebra a igualdade byte a byte das respostas |
+| Request | `spec/requests/permissions_policy_spec.rb` | `Permissions-Policy` negando os recursos não usados |
+| Request | `spec/requests/signup_race_spec.rb` | Corrida de unicidade vira 422, não 500 |
 
 A justificativa de por que os testes de segurança não são de sistema está na
 seção 8 de [`ARQUITETURA.md`](ARQUITETURA.md).
@@ -399,11 +423,14 @@ Quatro cuidados embutidos:
   `workflow_run` o padrão traria a branch já avançada, publicando um commit
   diferente do que a CI testou.
 - **`fetch-depth: 0`** — o Dokku recebe um push de git, não um tarball.
-- **Verificação de host key com falha explícita.** Se `DOKKU_HOST_KEY` estiver
-  vazio, cai em TOFU via `ssh-keyscan`; em ambos os casos um `ssh-keygen -F`
-  confirma que o `known_hosts` cobre o host e falha com mensagem acionável em vez
-  de estourar depois como "Host key verification failed". A janela de MITM do
-  caminho TOFU está catalogada como **V-09** em [`SEGURANCA.md`](SEGURANCA.md).
+- **Host key SSH obrigatória.** O secret `DOKKU_HOST_KEY` é exigido; não há mais
+  fallback para `ssh-keyscan`, que era trust-on-first-use a *cada* execução e
+  deixava quem estivesse na rede do runner receber o push com o código-fonte
+  inteiro (V-09). Um `ssh-keygen -F` ainda confirma que o `known_hosts` cobre o
+  host, falhando com mensagem acionável em vez de estourar depois como "Host key
+  verification failed".
+- **Actions fixadas por SHA** e `permissions: contents: read` nos dois workflows
+  (V-08).
 - **Push sem `--force`.** Rejeição por não-fast-forward é sinal de histórico
   reescrito — investigue em vez de forçar.
 
@@ -425,9 +452,9 @@ Nenhuma credencial em arquivo versionado, em nenhum ambiente.
 |---|---|
 | Node.js, `package.json`, bundler JS | importmap + Propshaft + binário standalone do Tailwind cobrem tudo. Zero build de front-end |
 | SPA (React/Vue) + API JSON | Nenhum consumidor fora do navegador. Ver seção 1 de `ARQUITETURA.md` |
-| JWT | A autenticação anda em cookie `httponly`: não é roubável por XSS e o logout é imediato |
+| JWT | A autenticação anda em cookie `httponly`: não é roubável por XSS e o logout é imediato no navegador do usuário |
 | Devise / gem de auth | Quatro ações de controller; `has_secure_password` já resolve |
-| Redis, Sidekiq, Solid Queue/Cache/Cable | Não há job, cache distribuído nem WebSocket. Cache é `:memory_store` em dev e `:null_store` em teste |
+| Redis, Sidekiq, Solid Queue/Cache/Cable | Não há job nem WebSocket. Cache é `:memory_store` nos três ambientes — em teste porque o `rate_limit` conta ali (com `:null_store` o contador nunca subiria), em produção porque hoje é um processo Puma só. **Escalar para vários workers exige um store compartilhado**, senão o limite efetivo vira N × 10 |
 | Kamal | O deploy é `git push` para Dokku; o Dokku faz o build |
 | `bootsnap` | Removido de propósito: o cache nativo não abre caminho com acento no Windows e quebra o boot |
 | `rack-cors`, `jbuilder` | Herdados comentados do gerador; sem API JSON, não têm função |
