@@ -81,12 +81,24 @@ Rails.application.configure do
   # Only use :id for inspections in production.
   config.active_record.attributes_for_inspect = [ :id ]
 
-  # Enable DNS rebinding protection and other `Host` header attacks.
-  # config.hosts = [
-  #   "example.com",     # Allow requests from example.com
-  #   /.*\.example\.com/ # Allow requests from subdomains like `www.example.com`
-  # ]
+  # O Rails so popula config.hosts em development. Em producao a lista fica
+  # vazia e o HostAuthorization aceita QUALQUER cabecalho Host, o que permite
+  # envenenar URLs absolutas geradas pela aplicacao, DNS rebinding contra a
+  # droplet e respostas servidas para dominios de terceiros apontados para o IP.
   #
-  # Skip DNS rebinding protection for the default health check endpoint.
-  # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  # APP_HOST e definido pelo .github/setup-dokku.sh. Sem ele, subir em producao
+  # falha aqui - de proposito: um deploy sem a lista preenchida seria o mesmo
+  # buraco de antes, so que silencioso.
+  #
+  # A excecao e o `assets:precompile` do build da imagem, que roda com
+  # RAILS_ENV=production mas nao serve requisicao nenhuma e nao conhece o
+  # dominio. O Dockerfile marca esse momento com SECRET_KEY_BASE_DUMMY; sem
+  # esta guarda o ENV.fetch derrubaria o build.
+  unless ENV["SECRET_KEY_BASE_DUMMY"]
+    config.hosts = [ ENV.fetch("APP_HOST") ]
+
+    # O healthcheck do Dokku bate no container pelo IP interno, sem o Host do
+    # dominio. Sem esta excecao o /up passa a responder 403 e o deploy trava.
+    config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  end
 end

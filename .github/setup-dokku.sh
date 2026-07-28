@@ -66,10 +66,13 @@ if [ -z "$(dokku config:get "$APP_NAME" SECRET_KEY_BASE 2>/dev/null || true)" ];
   dokku config:set --no-restart "$APP_NAME" "SECRET_KEY_BASE=$(openssl rand -hex 64)"
 fi
 
+# APP_HOST alimenta o config.hosts de producao. Sem ele a aplicacao nao sobe:
+# lista vazia faria o Rails aceitar qualquer cabecalho Host.
 dokku config:set --no-restart "$APP_NAME" \
   RAILS_ENV=production \
   RAILS_LOG_TO_STDOUT=true \
-  RAILS_MAX_THREADS=3
+  RAILS_MAX_THREADS=3 \
+  "APP_HOST=$APP_DOMAIN"
 
 # --------------------------------------------------------------------------
 # Banco
