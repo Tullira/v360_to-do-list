@@ -1,10 +1,7 @@
-<div class="mx-auto mt-10 w-full max-w-2xl">
-  <div class="mb-6 flex items-end justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Minhas listas</h1>
-      <p class="mt-1 text-sm text-slate-500"><%= pluralize(@lists.size, "lista") %></p>
-    </div>
-
+<div class="page">
+  <%= render layout: "shared/page_header",
+             locals: { title: "Minhas listas",
+                       subtitle: pluralize(@lists.size, "lista") } do %>
     <%= render layout: "shared/modal",
                locals: { trigger: "Nova lista",
                          title: "Nova lista",
@@ -24,34 +21,35 @@
         </div>
       <% end %>
     <% end %>
-  </div>
+  <% end %>
 
   <% if @lists.empty? %>
-    <div class="card p-10 text-center">
-      <svg class="mx-auto size-10 text-slate-300" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round"
-              d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />
-      </svg>
-      <h2 class="mt-4 font-medium text-slate-900">Voce ainda nao tem listas</h2>
-      <p class="mt-1 text-sm text-slate-500">Clique em "Nova lista" para criar a primeira.</p>
-    </div>
+    <%= render "shared/empty_state",
+               icon: "list",
+               title: "Voce ainda nao tem listas",
+               hint: 'Clique em "Nova lista" para criar a primeira.' %>
   <% else %>
-    <ul class="card divide-y divide-slate-100">
+    <ul class="card row-divide">
       <% @lists.each do |list| %>
         <% total = list.tasks.size %>
         <% concluidas = list.tasks.count(&:completed?) %>
-        <li class="flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-slate-50">
-          <div class="min-w-0">
+        <li class="row items-center justify-between">
+          <div class="min-w-0 flex-1">
             <%= link_to list.name, list_path(list),
-                  class: "block truncate font-medium text-slate-900 hover:text-indigo-600" %>
-            <p class="mt-0.5 text-xs text-slate-500">
+                  class: "block truncate font-medium text-fg transition-colors hover:text-accent-text" %>
+
+            <div class="mt-1.5 flex items-center gap-2.5">
               <% if total.zero? %>
-                Sem tarefas
+                <p class="meta">Sem tarefas</p>
               <% else %>
-                <%= concluidas %> de <%= pluralize(total, "tarefa") %> concluidas
+                <%# O valor vai em atributo, nao em style="width:X%": estilo
+                    inline conflitaria com a CSP planejada em SEGURANCA.md.
+                    aria-hidden porque o texto ao lado ja diz o mesmo. %>
+                <progress class="progress w-20 shrink-0"
+                          value="<%= concluidas %>" max="<%= total %>" aria-hidden="true"></progress>
+                <p class="meta truncate"><%= concluidas %> de <%= pluralize(total, "tarefa") %> concluidas</p>
               <% end %>
-            </p>
+            </div>
           </div>
 
           <div class="flex shrink-0 items-center gap-1">

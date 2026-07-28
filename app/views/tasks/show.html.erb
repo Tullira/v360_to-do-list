@@ -1,53 +1,51 @@
-<div class="mx-auto mt-10 w-full max-w-2xl">
-  <nav class="mb-4 flex items-center gap-2 text-sm text-slate-500">
-    <%= link_to "Minhas listas", lists_path, class: "hover:text-slate-900" %>
-    <span aria-hidden="true">/</span>
-    <%= link_to @list.name, list_path(@list), class: "truncate hover:text-slate-900" %>
-  </nav>
+<div class="page">
+  <%= render "shared/breadcrumb",
+             trail: [ [ "Minhas listas", lists_path ], [ @list.name, list_path(@list) ] ] %>
 
-  <article class="card p-6">
+  <article class="card p-6 sm:p-7">
     <header class="flex items-start justify-between gap-4">
       <h1 class="<%= class_names("text-2xl font-semibold tracking-tight",
-                                 "text-slate-400 line-through" => @task.completed?,
-                                 "text-slate-900" => !@task.completed?) %>">
+                                 "text-fg-subtle line-through" => @task.completed?,
+                                 "text-fg" => !@task.completed?) %>">
         <%= @task.title %>
       </h1>
 
       <% if @task.completed? %>
-        <span class="badge bg-green-50 text-green-700 ring-green-200" data-task-status="completed">
-          Feita
-        </span>
+        <span class="badge badge-success" data-task-status="completed">Feita</span>
       <% else %>
-        <span class="badge bg-amber-50 text-amber-700 ring-amber-200" data-task-status="pending">
-          Pendente
-        </span>
+        <span class="badge badge-warning" data-task-status="pending">Pendente</span>
       <% end %>
     </header>
 
     <section class="mt-6">
-      <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">Descricao</h2>
+      <h2 class="section-label">Descricao</h2>
       <% if @task.description.present? %>
-        <p class="mt-2 whitespace-pre-line text-slate-700"><%= @task.description %></p>
+        <%# max-w em ch: linha longa demais faz o olho perder a proxima. %>
+        <p class="mt-2 max-w-[65ch] whitespace-pre-line text-fg"><%= @task.description %></p>
       <% else %>
-        <p class="mt-2 italic text-slate-400">Sem descricao</p>
+        <p class="mt-2 italic text-fg-subtle">Sem descricao</p>
       <% end %>
     </section>
 
-    <dl class="mt-6 grid grid-cols-2 gap-4 border-t border-slate-100 pt-6 text-sm">
+    <dl class="divider mt-6 grid grid-cols-1 gap-4 pt-6 text-sm sm:grid-cols-2">
       <div>
-        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Prazo</dt>
-        <dd class="mt-1 text-slate-700">
-          <%= @task.due_date.present? ? l(@task.due_date, format: :long) : "Sem prazo" %>
+        <dt class="section-label">Prazo</dt>
+        <dd class="mt-1.5">
+          <% if @task.due_date.present? %>
+            <%= render "shared/task_due_date", date: @task.due_date, completed: @task.completed? %>
+          <% else %>
+            <span class="text-fg-muted">Sem prazo</span>
+          <% end %>
         </dd>
       </div>
 
       <div>
-        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-400">Criada em</dt>
-        <dd class="mt-1 text-slate-700"><%= l @task.created_at.to_date, format: :long %></dd>
+        <dt class="section-label">Criada em</dt>
+        <dd class="mt-1.5 text-fg-muted"><%= l @task.created_at.to_date, format: :long %></dd>
       </div>
     </dl>
 
-    <div class="mt-6 flex items-center justify-between gap-4 border-t border-slate-100 pt-6">
+    <div class="divider mt-6 flex flex-wrap items-center justify-between gap-4 pt-6">
       <%= form_with model: [ @list, @task ], url: list_task_path(@list, @task), method: :patch,
                     class: "flex items-center gap-2" do |f| %>
         <%# return_to e um token fixo, nunca uma URL do cliente: aceitar uma URL
@@ -58,11 +56,11 @@
               onchange: "this.form.requestSubmit()",
               class: "checkbox" %>
         <%= f.label :completed, "Concluida", for: "task_completed",
-              class: "cursor-pointer text-sm text-slate-700" %>
+              class: "cursor-pointer text-sm text-fg" %>
       <% end %>
 
       <div class="flex items-center gap-2">
-        <%= link_to "Editar", edit_list_task_path(@list, @task), class: "btn btn-secondary" %>
+        <%= link_to "Editar", edit_list_task_path(@list, @task), class: "btn btn-secondary btn-sm" %>
         <%= button_to "Excluir tarefa", list_task_path(@list, @task), method: :delete,
               form_class: "inline-block", class: "btn btn-danger" %>
       </div>

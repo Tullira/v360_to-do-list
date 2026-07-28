@@ -1,0 +1,23 @@
+<%# Casca das telas de autenticacao.
+
+    Entrar e Criar conta tinham o mesmo container, o mesmo card, o mesmo par
+    titulo/subtitulo e o mesmo rodape - so o formulario mudava. Usado com
+    `render layout:`, com o formulario no bloco.
+
+    Locais: title, subtitle, footer_text, footer_link_label, footer_link_path.
+%>
+<div class="mx-auto mt-16 w-full max-w-sm">
+  <div class="card p-6 sm:p-7">
+    <h1 class="text-xl font-semibold tracking-tight text-fg"><%= title %></h1>
+    <p class="mt-1 text-sm text-fg-muted"><%= subtitle %></p>
+
+    <div class="mt-6">
+      <%= yield %>
+    </div>
+  </div>
+
+  <p class="mt-6 text-center text-sm text-fg-muted">
+    <%= footer_text %>
+    <%= link_to footer_link_label, footer_link_path, class: "link" %>
+  </p>
+</div>

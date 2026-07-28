@@ -1,0 +1,27 @@
+<%# Prazo da tarefa como badge.
+
+    O estado e DERIVADO de due_date vs Date.current - nao existe coluna de
+    status no banco e nenhuma regra de negocio muda. E apresentacao.
+
+    Uma tarefa ja concluida nunca aparece como atrasada: cobrar prazo de algo
+    que foi feito e ruido.
+
+    A cor sozinha nao pode carregar a informacao (WCAG 1.4.1), por isso os
+    estados de atencao tambem trazem a palavra ("Atrasada", "Hoje").
+
+    Locais: date, completed (opcional, padrao false).
+%>
+<% done = local_assigns.fetch(:completed, false) %>
+<% overdue = !done && date < Date.current %>
+<% due_today = !done && date == Date.current %>
+
+<span class="badge <%= overdue ? "badge-danger" : due_today ? "badge-warning" : "badge-neutral" %>">
+  <%= render "shared/icon", name: "calendar", class: "size-3 shrink-0" %>
+  <% if overdue %>
+    Atrasada &middot; <%= l date, format: :long %>
+  <% elsif due_today %>
+    Hoje
+  <% else %>
+    <%= l date, format: :long %>
+  <% end %>
+</span>

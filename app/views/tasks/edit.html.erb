@@ -1,15 +1,10 @@
-<div class="mx-auto mt-10 w-full max-w-md">
-  <nav class="mb-4 flex items-center gap-2 text-sm text-slate-500">
-    <%= link_to "Minhas listas", lists_path, class: "hover:text-slate-900" %>
-    <span aria-hidden="true">/</span>
-    <%= link_to @list.name, list_path(@list), class: "truncate hover:text-slate-900" %>
-  </nav>
+<div class="page-narrow">
+  <%= render "shared/breadcrumb",
+             trail: [ [ "Minhas listas", lists_path ], [ @list.name, list_path(@list) ] ] %>
 
-  <div class="card p-6">
-    <h1 class="text-xl font-semibold tracking-tight text-slate-900">Editar tarefa</h1>
-
+  <%= render layout: "shared/form_card", locals: { title: "Editar tarefa" } do %>
     <%= form_with model: [ @list, @task ], url: list_task_path(@list, @task), method: :patch,
-                  class: "mt-6 space-y-4" do |f| %>
+                  class: "space-y-4" do |f| %>
       <%= render "shared/errors", record: @task %>
       <%= hidden_field_tag :return_to, "task" %>
 
@@ -33,5 +28,5 @@
         <%= f.submit "Salvar", class: "btn btn-primary" %>
       </div>
     <% end %>
-  </div>
+  <% end %>
 </div>

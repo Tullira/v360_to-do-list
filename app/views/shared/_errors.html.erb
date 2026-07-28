@@ -1,6 +1,13 @@
+<%# Erros de validacao do registro.
+
+    As mensagens saem de `full_messages` e continuam em ingles - e o que a
+    suite afirma ("Name can't be blank", "Email has already been taken").
+    Traduzir exigiria um pt-BR.yml, que seria escopo novo.
+%>
 <% if record&.errors&.any? %>
-  <div class="mb-4 rounded-md border border-red-300 bg-red-50 p-3">
-    <ul class="list-inside list-disc text-sm text-red-800">
+  <div class="alert alert-danger mb-4" role="alert">
+    <%= render "shared/icon", name: "alert", class: "mt-0.5 size-4 shrink-0" %>
+    <ul class="space-y-1">
       <% record.errors.full_messages.each do |message| %>
         <li><%= message %></li>
       <% end %>

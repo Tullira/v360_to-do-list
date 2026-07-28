@@ -1,12 +1,8 @@
-<div class="mx-auto mt-10 w-full max-w-md">
-  <nav class="mb-4 text-sm">
-    <%= link_to "Minhas listas", lists_path, class: "text-slate-500 hover:text-slate-900" %>
-  </nav>
+<div class="page-narrow">
+  <%= render "shared/breadcrumb", trail: [ [ "Minhas listas", lists_path ] ] %>
 
-  <div class="card p-6">
-    <h1 class="text-xl font-semibold tracking-tight text-slate-900">Renomear lista</h1>
-
-    <%= form_with model: @list, url: list_path(@list), method: :patch, class: "mt-6 space-y-4" do |f| %>
+  <%= render layout: "shared/form_card", locals: { title: "Renomear lista" } do %>
+    <%= form_with model: @list, url: list_path(@list), method: :patch, class: "space-y-4" do |f| %>
       <%= render "shared/errors", record: @list %>
 
       <div>
@@ -19,5 +15,5 @@
         <%= f.submit "Salvar", class: "btn btn-primary" %>
       </div>
     <% end %>
-  </div>
+  <% end %>
 </div>
