@@ -7,6 +7,10 @@ quebradas sem quebrar segurança.
 Para regras de trabalho no dia a dia (comandos, ciclo TDD, convenções), veja
 [`../CLAUDE.md`](../CLAUDE.md).
 
+Este documento descreve o que **está** protegido. O que ainda **não está** —
+auditoria de vulnerabilidades em aberto, com a correção de cada uma — fica em
+[`SEGURANCA.md`](SEGURANCA.md).
+
 ---
 
 ## 1. A decisão central: monólito
@@ -164,6 +168,10 @@ estão cadastrados. `SessionsController::DUMMY_PASSWORD_DIGEST` iguala o custo.
 
 Esta é a seção mais importante do documento. Cada item tem spec dedicado.
 **Quebrar qualquer um é regressão de segurança, não mudança de comportamento.**
+
+As invariantes abaixo cobrem autorização. As lacunas fora dela — rate limiting,
+CSP, expiração de sessão, endurecimento do CI/CD — estão catalogadas em
+[`SEGURANCA.md`](SEGURANCA.md).
 
 ### 5.1 A posse vem da sessão, nunca do payload
 

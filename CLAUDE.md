@@ -99,6 +99,11 @@ A mesma regra vale para `task.reload` logo após um `click_button`.
 Boa parte dessas regras também está bloqueada tecnicamente em
 `.claude/settings.json` (permission rules).
 
+Vulnerabilidades conhecidas ainda em aberto (rate limiting, CSP, expiração de
+sessão, `config.hosts`, endurecimento do CI/CD), cada uma com a correção
+proposta e o spec de regressão: `docs/SEGURANCA.md`. Consulte antes de mexer em
+autenticação, sessão ou workflows — o que for corrigido de lá sai da lista.
+
 ## Invariantes de autorização
 Cada uma tem spec dedicado. Quebrar qualquer uma é regressão de segurança, não
 mudança de comportamento:
