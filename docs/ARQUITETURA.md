@@ -11,6 +11,9 @@ Este documento descreve o que **está** protegido. O que ainda **não está** �
 auditoria de vulnerabilidades em aberto, com a correção de cada uma — fica em
 [`SEGURANCA.md`](SEGURANCA.md).
 
+O inventário das dependências — cada peça da stack, versão, papel e por que ela
+e não outra — fica em [`STACK.md`](STACK.md).
+
 ---
 
 ## 1. A decisão central: monólito
