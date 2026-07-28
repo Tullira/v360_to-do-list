@@ -9,6 +9,15 @@
         data) no tema certo - sem ele um <input type=date> aberto no escuro
         aparece branco. %>
     <meta name="color-scheme" content="light dark">
+
+    <%# Icone da aba. Os arquivos ficam em public/ e nao em app/assets: o
+        navegador os busca por um caminho fixo, sem digest, e sem passar pelo
+        Propshaft. O SVG atende todo navegador atual; o PNG cobre o Safari e a
+        tela de inicio do iOS, que ignoram o SVG. %>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/icon.png">
+
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
