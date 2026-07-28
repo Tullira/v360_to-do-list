@@ -24,6 +24,78 @@ jobs:
       - name: Scan for known security vulnerabilities in gems used
         run: bin/bundler-audit
       
+  # O nome deste job e o nome do status check exigido na protecao da branch
+  # master ("Require status checks to pass before merging"). Renomear aqui sem
+  # renomear la faz o GitHub esperar por um check que nunca chega - PR travado
+  # - ou, pior, liberar o merge por nao exigir nada.
+  test:
+    name: test
+    runs-on: ubuntu-latest
+
+    # O Postgres da CI e descartavel: usuario/senha fixos aqui, sem secret,
+    # porque o servico so existe dentro da rede desta execucao.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      RAILS_ENV: test
+      # Variaveis discretas, como no compose.yaml. Nao use DATABASE_URL: o
+      # Rails a mescla sobre a config do ambiente atual (ver database.yml).
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME_TEST: to_do_list_test
+      # O Cuprite dirige um Chrome de verdade nos specs de sistema. No
+      # container o binario e o chromium (ver Dockerfile.dev); no runner do
+      # GitHub e o google-chrome instalado no passo abaixo.
+      BROWSER_PATH: /usr/bin/google-chrome
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            google-chrome-stable libvips postgresql-client
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Prepare test database
+        run: bin/rails db:test:prepare
+
+      - name: Build Tailwind CSS
+        # app/assets/builds/ nao e versionado. Sem este passo o Propshaft nao
+        # acha o "tailwind" do layout e todo spec de sistema quebra.
+        run: bin/rails tailwindcss:build
+
+      - name: Run test suite
+        run: bundle exec rspec
+
+      - name: Keep screenshots from failed system tests
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: screenshots
+          path: ${{ github.workspace }}/tmp/screenshots
+          if-no-files-found: ignore
+
   lint:
     runs-on: ubuntu-latest
     env:
