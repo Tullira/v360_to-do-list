@@ -1,0 +1,16 @@
+<%# Trilha de navegacao. lists/edit, tasks/show e tasks/edit repetiam este
+    bloco quase igual.
+
+    O nome da lista continua saindo como <a>: a suite faz click_link nele
+    para voltar da tarefa para a lista.
+
+    Local: trail - array de pares [texto, url].
+%>
+<nav class="mb-4 flex items-center gap-2 text-sm text-fg-muted" aria-label="Trilha de navegacao">
+  <% trail.each_with_index do |(label, path), index| %>
+    <% if index.positive? %>
+      <span aria-hidden="true" class="text-fg-faint">/</span>
+    <% end %>
+    <%= link_to label, path, class: "truncate transition-colors hover:text-fg" %>
+  <% end %>
+</nav>
