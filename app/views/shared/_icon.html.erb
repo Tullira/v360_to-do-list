@@ -1,0 +1,67 @@
+<%# Todos os icones da aplicacao em um lugar so.
+
+    Antes o mesmo <svg> aparecia copiado em varias views (o check da marca e o
+    do empty state de tarefas eram identicos), e ajustar um icone significava
+    cacar todas as copias.
+
+    Markup literal, nunca `raw`/`html_safe`: docs/SEGURANCA.md registra "zero
+    html_safe em app/" como invariante que nao deve regredir.
+
+    Locais:
+      name:         qual icone (obrigatorio)
+      class:        classes do <svg> (padrao "size-4")
+      stroke_width: espessura do traco nos icones de contorno (padrao "1.5")
+
+    Todos sao decorativos - quem carrega o significado e o texto ao lado -,
+    por isso aria-hidden="true" em todos. Um icone que precise de nome
+    acessivel deve receber um <span class="sr-only"> de quem chama.
+%>
+<% css = local_assigns.fetch(:class, "size-4") %>
+<% weight = local_assigns.fetch(:stroke_width, "1.5") %>
+
+<% case name %>
+<% when "check" %>
+  <svg class="<%= css %>" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="<%= weight %>" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+  </svg>
+
+<% when "list" %>
+  <svg class="<%= css %>" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="<%= weight %>" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round"
+          d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />
+  </svg>
+
+<% when "face-frown" %>
+  <svg class="<%= css %>" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="<%= weight %>" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round"
+          d="M9.75 9.75h.008v.008H9.75V9.75Zm4.5 0h.008v.008h-.008V9.75ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-6.75 3.75a3.75 3.75 0 0 0-4.5 0" />
+  </svg>
+
+<% when "plus" %>
+  <svg class="<%= css %>" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
+  </svg>
+
+<% when "chevron-left" %>
+  <svg class="<%= css %>" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <path d="M12.7 15.3a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4l4.6-4.6a1 1 0 1 1 1.4 1.4L8.8 10l3.9 3.9a1 1 0 0 1 0 1.4Z" />
+  </svg>
+
+<% when "calendar" %>
+  <svg class="<%= css %>" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <path d="M6 2a1 1 0 0 1 1 1v1h6V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1Zm10 6H4v7h12V8Z" />
+  </svg>
+
+<% when "alert" %>
+  <svg class="<%= css %>" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 4a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V7a1 1 0 0 1 1-1Zm0 8.5a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Z" />
+  </svg>
+
+<% when "check-circle" %>
+  <svg class="<%= css %>" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm3.7 6.2-4.2 4.2a1 1 0 0 1-1.4 0L6.3 10.6a1 1 0 1 1 1.4-1.4l1.1 1.1 3.5-3.5a1 1 0 1 1 1.4 1.4Z" />
+  </svg>
+<% end %>

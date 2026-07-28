@@ -28,11 +28,7 @@
 
   <% if @lists.empty? %>
     <div class="card p-10 text-center">
-      <svg class="mx-auto size-10 text-slate-300" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round"
-              d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />
-      </svg>
+      <%= render "shared/icon", name: "list", class: "mx-auto size-10 text-slate-300" %>
       <h2 class="mt-4 font-medium text-slate-900">Voce ainda nao tem listas</h2>
       <p class="mt-1 text-sm text-slate-500">Clique em "Nova lista" para criar a primeira.</p>
     </div>
