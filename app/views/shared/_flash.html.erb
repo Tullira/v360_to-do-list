@@ -1,0 +1,27 @@
+<%# Mensagens de flash.
+
+    role="alert" (assertivo) para erro e role="status" (polido) para sucesso:
+    um leitor de tela anuncia o erro na hora, mas nao interrompe a leitura em
+    curso para dar uma confirmacao.
+
+    O bloco de :notice continua sem nenhum controller que o alimente - a
+    aplicacao so escreve :alert hoje. Fica pronto, nao e removido, porque a
+    remocao seria mudanca de comportamento disfarcada de limpeza.
+%>
+<% if flash[:alert].present? %>
+  <div class="mx-auto mt-4 w-full max-w-2xl px-4">
+    <div class="alert alert-danger" role="alert">
+      <%= render "shared/icon", name: "alert", class: "mt-0.5 size-4 shrink-0" %>
+      <span><%= flash[:alert] %></span>
+    </div>
+  </div>
+<% end %>
+
+<% if flash[:notice].present? %>
+  <div class="mx-auto mt-4 w-full max-w-2xl px-4">
+    <div class="alert alert-success" role="status">
+      <%= render "shared/icon", name: "check-circle", class: "mt-0.5 size-4 shrink-0" %>
+      <span><%= flash[:notice] %></span>
+    </div>
+  </div>
+<% end %>

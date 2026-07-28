@@ -170,12 +170,14 @@
 --------------------------------------------------------------------------- */
 @layer components {
   /* --- Estrutura de pagina ------------------------------------------------ */
+  /* Sem padding horizontal nem inferior: quem cuida disso e o <main> do
+     layout, um nivel acima. Repetir aqui dobraria o recuo. */
   .page {
-    @apply mx-auto w-full max-w-2xl px-4 pb-24 pt-10;
+    @apply mx-auto w-full max-w-2xl pt-10;
   }
 
   .page-narrow {
-    @apply mx-auto w-full max-w-md px-4 pb-24 pt-10;
+    @apply mx-auto w-full max-w-md pt-10;
   }
 
   .page-title {
