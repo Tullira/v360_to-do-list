@@ -17,10 +17,10 @@
           data-action="click->dialog#closeOnBackdrop"
           class="modal-panel">
     <div class="p-6">
-      <h2 class="text-lg font-semibold tracking-tight text-slate-900"><%= title %></h2>
+      <h2 class="text-lg font-semibold tracking-tight text-fg"><%= title %></h2>
 
       <% if local_assigns[:subtitle].present? %>
-        <p class="mt-1 text-sm text-slate-500"><%= subtitle %></p>
+        <p class="mt-1 text-sm text-fg-muted"><%= subtitle %></p>
       <% end %>
 
       <div class="mt-5">
