@@ -1,6 +1,17 @@
 class UsersController < ApplicationController
   skip_before_action :require_login, only: %i[new create]
 
+  # Sem isto, criar contas e gratis para o atacante e caro para a droplet:
+  # cada cadastro custa um bcrypt e uma linha no Postgres.
+  rate_limit to: 5, within: 1.hour, only: :create, with: -> {
+    # O `with:` roda como before_action e interrompe a cadeia, entao a action
+    # `new` nunca executa: sem montar o @user aqui, o form_with da view recebe
+    # nil e a resposta de bloqueio quebra com erro 500.
+    @user = User.new
+    flash.now[:alert] = "Muitos cadastros a partir deste endereco. Tente mais tarde."
+    render :new, status: :too_many_requests
+  }
+
   def new
     @user = User.new
   end

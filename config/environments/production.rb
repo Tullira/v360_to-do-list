@@ -43,8 +43,14 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Replace the default in-process memory cache store with a durable alternative.
-  # config.cache_store = :mem_cache_store
+  # Necessario para o `rate_limit` de SessionsController e UsersController:
+  # sem cache_store configurado o contador nao tem onde viver.
+  #
+  # memory_store serve porque hoje e uma droplet unica com um processo Puma.
+  # Ao escalar para varios workers ou maquinas, isto PRECISA virar um store
+  # compartilhado (Solid Cache ou Redis): com memory_store cada processo conta
+  # separado e o limite efetivo vira N x 10.
+  config.cache_store = :memory_store, { size: 32.megabytes }
 
   # Replace the default in-process and non-durable queuing backend for Active Job.
   # config.active_job.queue_adapter = :resque

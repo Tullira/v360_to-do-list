@@ -8,6 +8,16 @@ class SessionsController < ApplicationController
 
   skip_before_action :require_login, only: %i[new create]
 
+  # Conta por IP, e nao por e-mail. Limitar por e-mail deixaria um atacante
+  # travar a conta de terceiros de proposito (DoS por lockout) e, pior, o
+  # proprio limite viraria o oraculo de enumeracao que o DUMMY_PASSWORD_DIGEST
+  # existe para fechar: quem existe bloquearia num ponto, quem nao existe em
+  # outro.
+  rate_limit to: 10, within: 3.minutes, only: :create, with: -> {
+    flash.now[:alert] = "Muitas tentativas. Tente de novo em alguns minutos."
+    render :new, status: :too_many_requests
+  }
+
   def new
   end
 
